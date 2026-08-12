@@ -9,13 +9,11 @@
 
 using Entity = uint32_t;
 
-// L'interface de base
 class IComponentPool {
 public:
     virtual ~IComponentPool() = default;
 };
 
-// Le vrai tiroir générique
 template<typename T>
 class ComponentPool : public IComponentPool {
 public:
@@ -30,7 +28,7 @@ public:
     }
 
     void removeData(uint32_t entityId) {
-        if (sparseSet.count(entityId) == 0) return; // Sécurité
+        if (sparseSet.count(entityId) == 0) return; 
         
         uint32_t denseIdx = sparseSet[entityId]; 
         uint32_t lastEntityId = denseIds.back(); 
@@ -52,7 +50,6 @@ public:
     }
 };
 
-// Le Chef d'orchestre
 class Registry {
 private:
     Entity nextEntity = 0;
@@ -72,7 +69,6 @@ public:
         ComponentPool<T>* pool = static_cast<ComponentPool<T>*>(pools[typeId].get());
     }
 
-    // Get or Create (Récupère le tiroir entier)
     template<typename T>
     ComponentPool<T>* getComponentPool() {
         std::type_index typeId(typeid(T));

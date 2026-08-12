@@ -1,4 +1,4 @@
-#include "ecs.hpp"
+#include "includes/ecs.hpp"
 #include <iostream>
 #include <cmath>
 #include <memory>
@@ -140,24 +140,22 @@ int main() {
     auto piece = std::make_shared<Transform>(Vector3(1, 2, 0));
     
     coffre->addChild(piece);
-    std::cout << "Pos globale de la piece : " << piece->getWorldPos() << std::endl;
+    std::cout << "Global position of the gold piece : " << piece->getWorldPos() << std::endl;
     coffre->move(Vector3(100, 0, 0));
-    std::cout << "Pos globale apres deplacement : " << piece->getWorldPos() << std::endl;
+    std::cout << "Global position after moving : " << piece->getWorldPos() << std::endl;
 
-    std::cout << "\n=== TEST DU RAYCAST ===" << std::endl;
+    std::cout << "\n=== RAYCAST TEST ===" << std::endl;
     Scene scene;
-    // On ajoute une sphère en (0, 0, 5) de rayon 1
     scene.addShape(std::make_unique<Sphere>(Vector3(0, 0, 5), 1.0f));
     
-    // On tire un rayon de (0,0,0) vers (0,0,1)
     Ray laser(Vector3(0, 0, 0), Vector3(0, 0, 1));
     
     auto impact = scene.castRay(laser);
     
     if (impact) {
-        std::cout << "Rayon a touche la sphere au point : " << *impact << std::endl;
+        std::cout << "The raycast collided with something  " << *impact << std::endl;
     } else {
-        std::cout << "Le rayon n'a rien touche." << std::endl;
+        std::cout << "The raycast hasn't collided with something" << std::endl;
     }
 
     Registry registry;
