@@ -1,3 +1,4 @@
+#include "ecs.hpp"
 #include <iostream>
 #include <cmath>
 #include <memory>
@@ -131,7 +132,7 @@ public:
 };
 
 int main() {
-*    auto coffre = std::make_shared<Transform>(Vector3(10, 0, 0));
+    auto coffre = std::make_shared<Transform>(Vector3(10, 0, 0));
     auto piece = std::make_shared<Transform>(Vector3(1, 2, 0));
     
     coffre->addChild(piece);
