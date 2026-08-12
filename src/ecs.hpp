@@ -64,13 +64,12 @@ public:
     }
 
     template<typename T, typename... Args>
-    void addComponent(Entity entity, Args&&... args) {
+    void addComponent() {
         std::type_index typeId(typeid(T));
         if (pools.find(typeId) == pools.end()) {
             pools[typeId] = std::make_unique<ComponentPool<T>>();
         }
         ComponentPool<T>* pool = static_cast<ComponentPool<T>*>(pools[typeId].get());
-        pool->addData(T{args...}, entity);
     }
 
     // Get or Create (Récupère le tiroir entier)
