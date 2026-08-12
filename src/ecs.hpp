@@ -1,63 +1,84 @@
 #pragma once
+
 #include <iostream>
-#include <vector>
 #include <unordered_map>
-#include <cstdint>
 #include <memory>
+#include <typeindex>
+#include <cstdint>
+#include <vector>
 
 using Entity = uint32_t;
 
+// L'interface de base
 class IComponentPool {
 public:
     virtual ~IComponentPool() = default;
 };
 
-template<T typename, typename... Args>
+// Le vrai tiroir générique
+template<typename T>
 class ComponentPool : public IComponentPool {
-private:
+public:
     std::vector<T> dense;
-    std::vector<uint32_t> denseIds;       
+    std::vector<uint32_t> denseIds;
     std::unordered_map<uint32_t, uint32_t> sparseSet;
 
-public:
     void addData(T data, uint32_t entityId) {
         dense.push_back(data);
         denseIds.push_back(entityId);
-        uint32_t denseIdx = dense.size() - 1;
-        sparseSet[entityId] = denseIdx;
+        sparseSet[entityId] = dense.size() - 1;
     }
 
     void removeData(uint32_t entityId) {
+        if (sparseSet.count(entityId) == 0) return; // Sécurité
+        
         uint32_t denseIdx = sparseSet[entityId]; 
         uint32_t lastEntityId = denseIds.back(); 
+        
         dense[denseIdx] = dense.back(); 
         denseIds[denseIdx] = lastEntityId;
         
         sparseSet[lastEntityId] = denseIdx; 
+        
         dense.pop_back();
         denseIds.pop_back();
-        sparseSet.erase(entityId); 
+        sparseSet.erase(entityId);
+    }
+
+    T* getComponent(uint32_t entityId) {
+        if (sparseSet.count(entityId) == 0) return nullptr;
+        uint32_t denseIdx = sparseSet[entityId];
+        return &dense[denseIdx];
     }
 };
 
+// Le Chef d'orchestre
 class Registry {
 private:
-    std::unordered_map<std::type_index, std::unique_ptr<ComponentPool>> registers;
-    uint32_t nextId = 0;
+    Entity nextEntity = 0;
+    std::unordered_map<std::type_index, std::unique_ptr<IComponentPool>> pools;
+
 public:
-    void addComponent(Entity entity, Args&&... args) {
-        std::type_index typeId(typeid(T)); // creates a type for the component submitted.
-        if (pools.find(typeId) == pools.end()) { // Verifies if the key exist in the unordered map.
-            pools[typeId] = std::make_unique<ComponentPool<T>>(); 
-        }
-        IComponentPool* basePtr = pools[typeId].get(); // Creates a pointer.
-        ComponentPool<T>* realPool = static_cast<ComponentPool<T>*>(basePtr); // Creating a new pointer based on the IComponentPool one with static_cast.
-        realPool->addData(T{args...}, entity); // call the addData function of the pointer.
+    Entity create() {
+        return nextEntity++;
     }
-    ComponentPool<T>* getComponent() {
+
+    template<typename T, typename... Args>
+    void addComponent(Entity entity, Args&&... args) {
         std::type_index typeId(typeid(T));
         if (pools.find(typeId) == pools.end()) {
-            return pools[typeId] = std::make_unique<ComponentPool<T>>();
+            pools[typeId] = std::make_unique<ComponentPool<T>>();
+        }
+        ComponentPool<T>* pool = static_cast<ComponentPool<T>*>(pools[typeId].get());
+        pool->addData(T{args...}, entity);
+    }
+
+    // Get or Create (Récupère le tiroir entier)
+    template<typename T>
+    ComponentPool<T>* getComponentPool() {
+        std::type_index typeId(typeid(T));
+        if (pools.find(typeId) == pools.end()) {
+            pools[typeId] = std::make_unique<ComponentPool<T>>();
         }
         return static_cast<ComponentPool<T>*>(pools[typeId].get());
     }

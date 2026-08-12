@@ -156,5 +156,13 @@ int main() {
         std::cout << "Le rayon n'a rien touche." << std::endl;
     }
 
+    Registry registry;
+    Entity player = registry.create();
+    Entity enemy = registry.create();
+
+    ComponentPool<Position>* posPool = registry.getComponentPool<Position>();
+
+    posPool->addData(Position{10.0f, 0.0f, 0.0f}, player);
+    posPool->addData(Position{25.0f, 5.0f, 0.0f}, enemy)
     return 0;
 }
