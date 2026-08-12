@@ -1,0 +1,175 @@
+#include <iostream>
+#include <cmath>
+#include <memory>
+#include <vector>
+#include <optional>
+
+// ==========================================
+// 1. MATHÉMATIQUES : VECTOR3
+// ==========================================
+struct Vector3 {
+  float x, y, z;
+
+  Vector3(float x, float y, float z) : x(x), y(y), z(z) {}
+  
+  float Magnitude() const {
+    return std::sqrt(x*x + y*y + z*z);
+  }
+  
+  Vector3 Unit() const {
+    float mag = Magnitude();
+    return Vector3(x/mag, y/mag, z/mag);
+  }
+
+  Vector3 operator+(const Vector3& other) const {
+    return Vector3(x + other.x, y + other.y, z + other.z);
+  }
+  
+  Vector3 operator-(const Vector3& other) const {
+    return Vector3(x - other.x, y - other.y, z - other.z);
+  }
+  
+  Vector3 operator*(float scalar) const {
+    return Vector3(x * scalar, y * scalar, z * scalar);
+  }
+
+  float Dot(const Vector3& other) const {
+    return ((x * other.x) + (y * other.y) + (z * other.z));
+  }
+
+  Vector3 Lerp(const Vector3& other, float t) const {
+    return Vector3(x + (other.x - x) * t, y + (other.y - y) * t, z + (other.z - z) * t);
+  }
+};
+
+std::ostream& operator<<(std::ostream& os, const Vector3& v) {
+    os << "(" << v.x << ", " << v.y << ", " << v.z << ")";
+    return os;
+}
+
+// ==========================================
+// 2. ANIMATION : COURBES D'EASING
+// ==========================================
+float cubicLerp(float t) {
+  return t * t * (3.0f - 2.0f * t);
+}
+
+float sineLerp(float t) {
+  return -(std::cos(3.14159f * t) - 1.0f) / 2.0f;
+}
+
+// ==========================================
+// 3. HIÉRARCHIE : TRANSFORM
+// ==========================================
+class Transform : public std::enable_shared_from_this<Transform> {
+private:
+  Vector3 pos;
+  std::vector<std::shared_ptr<Transform>> children;
+  std::weak_ptr<Transform> parent;
+public: 
+  Transform(const Vector3& pos) : pos(pos) {}
+
+  void move(const Vector3& newPos) { pos = newPos; }  
+  Vector3 getPos() const { return pos; }
+
+  void addChild(std::shared_ptr<Transform> child) {
+    child->parent = shared_from_this();
+    children.push_back(std::move(child));
+  }
+
+  Vector3 getWorldPos() const {
+    auto lockedParent = parent.lock();
+    if (lockedParent != nullptr) {
+        return pos + lockedParent->getWorldPos(); 
+    } else {
+        return pos;
+    }
+  }  
+};
+
+// ==========================================
+// 4. MOTEUR PHYSIQUE : RAYCASTING
+// ==========================================
+struct Ray {
+  Vector3 origin;
+  Vector3 direction;
+  Ray(const Vector3& origin, const Vector3& direction) : origin(origin), direction(direction) {}
+};
+
+struct Shape {
+  virtual ~Shape() = default;
+  virtual std::optional<Vector3> intersect(const Ray& ray) const = 0;
+};
+
+struct Sphere : Shape {  
+  Vector3 center;
+  float radius;
+
+  Sphere(const Vector3& center, float radius) : center(center), radius(radius) {}
+
+  std::optional<Vector3> intersect(const Ray& ray) const override {
+    Vector3 dir = ray.direction.Unit();
+    Vector3 L = center - ray.origin;
+    float tca = L.Dot(dir);
+
+    if (tca < 0) return std::nullopt;
+    
+    float d2 = L.Magnitude() * L.Magnitude() - tca * tca;
+    if (d2 > radius * radius) return std::nullopt;
+    
+    float thc = std::sqrt(radius * radius - d2);
+    float t0 = tca - thc;
+    
+    return ray.origin + (dir * t0);
+  }
+};
+
+class Scene {
+private:    
+    std::vector<std::unique_ptr<Shape>> shapes;
+public:
+    void addShape(std::unique_ptr<Shape> shape) {
+        shapes.push_back(std::move(shape));
+    }
+    
+    std::optional<Vector3> castRay(const Ray& ray) const {
+        for (const auto& s : shapes) {
+            if (auto point = s->intersect(ray)) {
+                return point;
+            }
+        }
+        return std::nullopt;
+    }
+};
+
+// ==========================================
+// 5. LE TEST FINAL (MAIN)
+// ==========================================
+int main() {
+    std::cout << "=== TEST DU TRANSFORM ===" << std::endl;
+    auto coffre = std::make_shared<Transform>(Vector3(10, 0, 0));
+    auto piece = std::make_shared<Transform>(Vector3(1, 2, 0));
+    
+    coffre->addChild(piece);
+    std::cout << "Pos globale de la piece : " << piece->getWorldPos() << std::endl;
+    coffre->move(Vector3(100, 0, 0));
+    std::cout << "Pos globale apres deplacement : " << piece->getWorldPos() << std::endl;
+
+    std::cout << "\n=== TEST DU RAYCAST ===" << std::endl;
+    Scene scene;
+    // On ajoute une sphère en (0, 0, 5) de rayon 1
+    scene.addShape(std::make_unique<Sphere>(Vector3(0, 0, 5), 1.0f));
+    
+    // On tire un rayon de (0,0,0) vers (0,0,1)
+    Ray laser(Vector3(0, 0, 0), Vector3(0, 0, 1));
+    
+    auto impact = scene.castRay(laser);
+    
+    if (impact) {
+        std::cout << "Rayon a touche la sphere au point : " << *impact << std::endl;
+    } else {
+        std::cout << "Le rayon n'a rien touche." << std::endl;
+    }
+
+    return 0;
+}
