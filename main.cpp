@@ -4,9 +4,6 @@
 #include <vector>
 #include <optional>
 
-// ==========================================
-// 1. MATHÉMATIQUES : VECTOR3
-// ==========================================
 struct Vector3 {
   float x, y, z;
 
@@ -47,9 +44,6 @@ std::ostream& operator<<(std::ostream& os, const Vector3& v) {
     return os;
 }
 
-// ==========================================
-// 2. ANIMATION : COURBES D'EASING
-// ==========================================
 float cubicLerp(float t) {
   return t * t * (3.0f - 2.0f * t);
 }
@@ -58,9 +52,6 @@ float sineLerp(float t) {
   return -(std::cos(3.14159f * t) - 1.0f) / 2.0f;
 }
 
-// ==========================================
-// 3. HIÉRARCHIE : TRANSFORM
-// ==========================================
 class Transform : public std::enable_shared_from_this<Transform> {
 private:
   Vector3 pos;
@@ -87,9 +78,6 @@ public:
   }  
 };
 
-// ==========================================
-// 4. MOTEUR PHYSIQUE : RAYCASTING
-// ==========================================
 struct Ray {
   Vector3 origin;
   Vector3 direction;
@@ -142,12 +130,8 @@ public:
     }
 };
 
-// ==========================================
-// 5. LE TEST FINAL (MAIN)
-// ==========================================
 int main() {
-    std::cout << "=== TEST DU TRANSFORM ===" << std::endl;
-    auto coffre = std::make_shared<Transform>(Vector3(10, 0, 0));
+*    auto coffre = std::make_shared<Transform>(Vector3(10, 0, 0));
     auto piece = std::make_shared<Transform>(Vector3(1, 2, 0));
     
     coffre->addChild(piece);
