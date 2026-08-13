@@ -4,23 +4,31 @@
 #include "Math.hpp"
 #include <chrono>
 #include <thread>
+#include <functional>
+#include <vector>
+#include <queue>
+#include <string>
 
-class Engine {
-private:
-    bool isRunning = false;
-    Registry registry; 
-
+template<typename T>
+class Event {
+private:    
+    std::function<void(T)> event;
+    int priority;
+    float maxTime;
+    std::string eventType;
 public:
-    void start() {
-        isRunning = true;
-        auto lastTime = std::chrono::high_resolution_clock::now();
+    event(std::function<void(T)> event, int priority, float maxTime) : event(event), priority(priority), maxTime(maxTime) {}  
+    void fireEvent(T args) {
+        event(args)
+    }
+}
 
-        while (isRunning) {
-            auto currentTime = std::chrono::high_resolution_clock::now();
-            std::chrono::duration<float> dt = currentTime - lastTime;
-            lastTime = currentTime;
-            update(dt.count());
-            std::this_thread::sleep_for(std::chrono::milliseconds(16)); // ~60 FPS
-        }
-    }    
+class taskScheduler {
+private:    
+    std::priority_queue<Event> events;
+    bool isRunning = true;
+public:
+    void pushBack(const Event& event) {
+        events.push(event.priority, )
+    }
 }
