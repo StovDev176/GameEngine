@@ -14,8 +14,6 @@ struct Event {
     std::function<void(float)> event;
     int priority;
     bool oneShot;
-
-
     Event(std::function<void(float)> event, int priority, bool oneShot) : event(event), priority(priority), oneShot(oneShot) {}  
     ~Event() {}
 };

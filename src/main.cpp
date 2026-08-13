@@ -2,6 +2,7 @@
 #include "includes/Math.hpp"
 #include "includes/DataModel.hpp"
 #include "includes/Physics.hpp"
+#include "includes/TaskScheduler.hpp"
 #include <iostream>
 #include <cmath>
 #include <memory>
@@ -77,6 +78,10 @@ int main() {
     std::chrono::duration<double, std::milli> duration = end - start;
 
     std::cout << "Execution time : " << duration.count() << " ms" << std::endl;
+    std::vector<int> nums = {1, 7, 2};
+    TaskScheduler taskScheduler;
+    taskScheduler.insertEvent(Event([nums](float dt){std::cout<<"It works"<<std::endl;}, 1, false));
 
+    taskScheduler.start();
     return 0;
 }
