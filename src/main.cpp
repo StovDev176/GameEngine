@@ -4,10 +4,7 @@
 #include <memory>
 #include <vector>
 #include <optional>
-
-struct Position {
-    float x, y, z;
-};
+#include <chrono>
 
 struct Vector3 {
   float x, y, z;
@@ -48,6 +45,14 @@ std::ostream& operator<<(std::ostream& os, const Vector3& v) {
     os << "(" << v.x << ", " << v.y << ", " << v.z << ")";
     return os;
 }
+
+struct Position {
+    Vector3 pos;
+};
+
+struct Velocity {
+  Vector3 vel;
+};
 
 float cubicLerp(float t) {
   return t * t * (3.0f - 2.0f * t);
@@ -117,6 +122,24 @@ struct Sphere : Shape {
   }
 };
 
+void movementSystem(Registry& registry) {
+  ComponentPool<Velocity>* velocityPool = registry.getComponentPool<Velocity>();
+  ComponentPool<Position>* positionPool = registry.getComponentPool<Position>();
+
+  for (size_t i=0; i<velocityPool->dense.size(); i++) {
+    Entity entityId = velocityPool->denseIds[i];
+    Velocity vel = velocityPool->dense[i];
+
+    Position* posPtr = positionPool->getComponent(entityId);
+    if (posPtr != nullptr) {
+      posPtr->pos = posPtr->pos + vel.vel;
+      std::cout << "Successfully updated the position, this is new position :  " << posPtr->pos << std::endl;
+    }
+
+  }
+
+}
+
 class Scene {
 private:    
     std::vector<std::unique_ptr<Shape>> shapes;
@@ -157,14 +180,26 @@ int main() {
     } else {
         std::cout << "The raycast hasn't collided with something" << std::endl;
     }
-
+    auto start = std::chrono::high_resolution_clock::now();
     Registry registry;
     Entity player = registry.create();
     Entity enemy = registry.create();
-    registry.addComponent<Position>();
     ComponentPool<Position>* posPool = registry.getComponentPool<Position>();
+    ComponentPool<Velocity>* velocityPool = registry.getComponentPool<Velocity>();
 
-    posPool->addData(Position{10.0f, 0.0f, 0.0f}, player);
-    posPool->addData(Position{25.0f, 5.0f, 0.0f}, enemy);
+    posPool->addData(Position{{10.0f, 0.0f, 0.0f}}, player);
+    velocityPool->addData(Velocity{{1.5f, 0.0f, 0.0f}}, player);
+    posPool->addData(Position{{25.0f, 5.0f, 0.0f}}, enemy);
+
+    for (int i=0; i<5; i++) {
+      movementSystem(registry);
+    }
+
+    auto end = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double, std::milli> duration = end - start;
+
+    std::cout << "Execution time : " << duration.count() << " ms" << std::endl;
+
     return 0;
 }
