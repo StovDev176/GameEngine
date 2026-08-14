@@ -18,7 +18,7 @@ struct Velocity {
   Vector3 vel;
 };
 
-void movementSystem(Registry& registry) {
+void movementSystem(Registry& registry, float dt) {
   ComponentPool<Velocity>* velocityPool = registry.getComponentPool<Velocity>();
   ComponentPool<Position>* positionPool = registry.getComponentPool<Position>();
 
@@ -28,7 +28,7 @@ void movementSystem(Registry& registry) {
 
     Position* posPtr = positionPool->getComponent(entityId);
     if (posPtr != nullptr) {
-      posPtr->pos = posPtr->pos + vel.vel;
+      posPtr->pos = posPtr->pos + (vel.vel * dt);
       std::cout << "Successfully updated the position, this is new position :  " << posPtr->pos << std::endl;
     }
 
@@ -69,10 +69,6 @@ int main() {
     velocityPool->addData(Velocity{{1.5f, 0.0f, 0.0f}}, player);
     posPool->addData(Position{{25.0f, 5.0f, 0.0f}}, enemy);
 
-    for (int i=0; i<5; i++) {
-      movementSystem(registry);
-    }
-
     auto end = std::chrono::high_resolution_clock::now();
 
     std::chrono::duration<double, std::milli> duration = end - start;
@@ -80,8 +76,10 @@ int main() {
     std::cout << "Execution time : " << duration.count() << " ms" << std::endl;
     std::vector<int> nums = {1, 7, 2};
     TaskScheduler taskScheduler;
-    taskScheduler.insertEvent(Event([nums](float dt){std::cout<<"It works"<<std::endl;}, 1, false));
 
+    std::string eventName = "Animation";    
+    taskScheduler.insertEvent(Event([&registry](float dt){movementSystem(registry, dt);}, 1, true));
+    taskScheduler.insertEvent(Event([eventName](float dt){std::cout << eventName <<std::endl;}, 2, true));
     taskScheduler.start();
     return 0;
 }
