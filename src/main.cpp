@@ -4,6 +4,7 @@
 #include "includes/Physics.hpp"
 #include "includes/TaskScheduler.hpp"
 #include "includes/Renderer.hpp"
+#include "includes/Components.hpp"
 #include <iostream>
 #include <cmath>
 #include <memory>
@@ -63,12 +64,15 @@ int main() {
     Registry registry;
     Entity player = registry.create();
     Entity enemy = registry.create();
+    Entity mesh1 = registry.create();
+    ComponentPool<MeshComponent>* meshPool = registry.getComponentPool<MeshComponent>();
     ComponentPool<Position>* posPool = registry.getComponentPool<Position>();
     ComponentPool<Velocity>* velocityPool = registry.getComponentPool<Velocity>();
 
     posPool->addData(Position{{10.0f, 0.0f, 0.0f}}, player);
     velocityPool->addData(Velocity{{1.5f, 0.0f, 0.0f}}, player);
     posPool->addData(Position{{25.0f, 5.0f, 0.0f}}, enemy);
+    meshPool->addData(MeshComponent(PrimitiveType::SPHERE, 3.0f, BLUE), player);
 
     auto end = std::chrono::high_resolution_clock::now();
 
@@ -96,12 +100,25 @@ int main() {
     }
     }, 0, false));
 
-    taskScheduler.insertEvent(Event([&renderer, posPool, &camera](float dt){
+    taskScheduler.insertEvent(Event([&renderer, posPool, &camera, meshPool](float dt){
       renderer.beginFrame(camera);
-      for (auto pos : posPool->dense) {
-        renderer.drawGrid(20, 1.0f);  
+      renderer.drawGrid(30, 1.0f);
+      for (int i=0; i<meshPool->dense.size();i++) {
+        uint32_t id = meshPool->denseIds[i];
+        MeshComponent* meshPtr = &meshPool->dense[i];
+        Position* posPtr = posPool->getComponent(id);
 
-        renderer.drawCube(pos.pos, 5.5f, 1.2f, 3.0f, BLUE);
+        if (posPtr != nullptr && meshPtr != nullptr) {
+          switch(meshPtr->meshType) {
+            case PrimitiveType::SPHERE:
+              renderer.drawSphere({posPtr->pos.x, posPtr->pos.y, posPtr->pos.z}, meshPtr->size, meshPtr->color);
+              break;
+            case PrimitiveType::CUBE:
+              renderer.drawCube({posPtr->pos.x, posPtr->pos.y, posPtr->pos.z}, meshPtr->size, meshPtr->size, meshPtr->size, meshPtr->color);
+              break;
+          }
+        }
+
       }
       renderer.endFrame();
     }, 10, false));
