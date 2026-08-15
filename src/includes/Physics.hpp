@@ -4,6 +4,7 @@
 #include <iostream>
 #include <optional>
 #include <vector>
+#include "raylib.h"
 
 struct Ray {
   Vector3 origin;
@@ -14,6 +15,7 @@ struct Ray {
 struct Shape {
   virtual ~Shape() = default;
   virtual std::optional<Vector3> intersect(const Ray& ray) const = 0;
+  virtual void drawShape(Color color) const = 0 {}
 };
 
 struct Sphere : Shape {  
@@ -38,6 +40,13 @@ struct Sphere : Shape {
     return ray.origin + (dir * t0);
   }
 };
+
+struct Quadrilateral : Shape {
+  Vector3 size;
+  Vector3 pos;
+
+  Quadrilateral(const Vector3& size, const Vector3& pos) : pos(pos), size(size) {}
+}
 
 class Scene {
 private:    

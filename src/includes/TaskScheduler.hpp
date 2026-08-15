@@ -55,4 +55,7 @@ public:
             events.end()
         );
     }
+    void stop() {
+        isRunning = false;
+    }
 };

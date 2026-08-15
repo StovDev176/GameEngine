@@ -3,6 +3,7 @@
 #include "includes/DataModel.hpp"
 #include "includes/Physics.hpp"
 #include "includes/TaskScheduler.hpp"
+#include "includes/Renderer.hpp"
 #include <iostream>
 #include <cmath>
 #include <memory>
@@ -80,6 +81,31 @@ int main() {
     std::string eventName = "Animation";    
     taskScheduler.insertEvent(Event([&registry](float dt){movementSystem(registry, dt);}, 1, true));
     taskScheduler.insertEvent(Event([eventName](float dt){std::cout << eventName <<std::endl;}, 2, true));
+    
+    Camera3D camera = {0};
+    camera.position = (Vector3){ 10.0f, 10.0f, 10.0f }; 
+    camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };     
+    camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          
+    camera.fovy = 45.0f; 
+    camera.projection = CAMERA_PERSPECTIVE;  
+
+    Renderer renderer(camera);
+    taskScheduler.insertEvent(Event([&taskScheduler](float dt) {
+    if (WindowShouldClose()) {
+        taskScheduler.stop();
+    }
+    }, 0, false));
+
+    taskScheduler.insertEvent(Event([&renderer, posPool](float dt){
+      renderer.beginFrame();
+      for (auto pos : posPool->dense) {
+        renderer.drawCube(pos.pos, 5.5f, 1.2f, 3.0f, BLUE);
+      }
+      renderer.endFrame();
+    }, 10, false));
+
+    
     taskScheduler.start();
+    CloseWindow();
     return 0;
 }
