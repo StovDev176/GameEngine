@@ -5,17 +5,15 @@
 #include "Physics.hpp"
 
 class Renderer {
-private:
-    Camera3D camera;
 public:
-    Renderer(const Camera3D& camera) : camera(camera) {
-        InitWindow(800, 450, "My 3D game engine!");
+    Renderer() {
+        InitWindow(800, 450, "Project Maria");
         SetTargetFPS(60);
     }   
-    void beginFrame() {
+    void beginFrame(const Camera3D& cam) {
         BeginDrawing();
         ClearBackground(BLACK);
-        BeginMode3D(camera);
+        BeginMode3D(cam);
     } 
     void endFrame() {
         EndMode3D();
@@ -25,7 +23,10 @@ public:
     void drawSphere(const Sphere& sphere, Color color) {
         DrawSphere({sphere.center.x, sphere.center.y, sphere.center.z}, sphere.radius, color);
     } 
-    void drawCube(const Vector3& pos, float w, float h, float l, Color color) {
+    void drawCube(const vector3& pos, float w, float h, float l, Color color) {
         DrawCube({pos.x, pos.y, pos.z}, w, h, l, color);
+    }
+    void drawGrid(int slices, float spacing) {
+        DrawGrid(slices, spacing);
     }
 };

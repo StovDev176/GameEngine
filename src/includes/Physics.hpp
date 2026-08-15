@@ -6,27 +6,26 @@
 #include <vector>
 #include "raylib.h"
 
-struct Ray {
-  Vector3 origin;
-  Vector3 direction;
-  Ray(const Vector3& origin, const Vector3& direction) : origin(origin), direction(direction) {}
+struct Raycast {
+  vector3 origin;
+  vector3 direction;
+  Raycast(const vector3& origin, const vector3& direction) : origin(origin), direction(direction) {}
 };
 
 struct Shape {
   virtual ~Shape() = default;
-  virtual std::optional<Vector3> intersect(const Ray& ray) const = 0;
-  virtual void drawShape(Color color) const = 0 {}
+  virtual std::optional<vector3> intersect(const Raycast& ray) const = 0;
 };
 
 struct Sphere : Shape {  
-  Vector3 center;
+  vector3 center;
   float radius;
 
-  Sphere(const Vector3& center, float radius) : center(center), radius(radius) {}
+  Sphere(const vector3& center, float radius) : center(center), radius(radius) {}
 
-  std::optional<Vector3> intersect(const Ray& ray) const override {
-    Vector3 dir = ray.direction.Unit();
-    Vector3 L = center - ray.origin;
+  std::optional<vector3> intersect(const Raycast& ray) const override {
+    vector3 dir = ray.direction.Unit();
+    vector3 L = center - ray.origin;
     float tca = L.Dot(dir);
 
     if (tca < 0) return std::nullopt;
@@ -42,11 +41,11 @@ struct Sphere : Shape {
 };
 
 struct Quadrilateral : Shape {
-  Vector3 size;
-  Vector3 pos;
+  vector3 size;
+  vector3 pos;
 
-  Quadrilateral(const Vector3& size, const Vector3& pos) : pos(pos), size(size) {}
-}
+  Quadrilateral(const vector3& size, const vector3& pos) : pos(pos), size(size) {}
+};
 
 class Scene {
 private:    
@@ -56,7 +55,7 @@ public:
         shapes.push_back(std::move(shape));
     }
     
-    std::optional<Vector3> castRay(const Ray& ray) const {
+    std::optional<vector3> castRay(const Raycast& ray) const {
         for (const auto& s : shapes) {
             if (auto point = s->intersect(ray)) {
                 return point;

@@ -12,11 +12,11 @@
 #include <chrono>
 
 struct Position {
-    Vector3 pos;
+    vector3 pos;
 };
 
 struct Velocity {
-  Vector3 vel;
+  vector3 vel;
 };
 
 void movementSystem(Registry& registry, float dt) {
@@ -38,19 +38,19 @@ void movementSystem(Registry& registry, float dt) {
 }
 
 int main() {
-    auto coffre = std::make_shared<Transform>(Vector3(10, 0, 0));
-    auto piece = std::make_shared<Transform>(Vector3(1, 2, 0));
+    auto coffre = std::make_shared<SceneNode>(vector3(10, 0, 0));
+    auto piece = std::make_shared<SceneNode>(vector3(1, 2, 0));
     
     coffre->addChild(piece);
     std::cout << "Global position of the gold piece : " << piece->getWorldPos() << std::endl;
-    coffre->move(Vector3(100, 0, 0));
+    coffre->move(vector3(100, 0, 0));
     std::cout << "Global position after moving : " << piece->getWorldPos() << std::endl;
 
     std::cout << "\n=== RAYCAST TEST ===" << std::endl;
     Scene scene;
-    scene.addShape(std::make_unique<Sphere>(Vector3(0, 0, 5), 1.0f));
+    scene.addShape(std::make_unique<Sphere>(vector3(0, 0, 5), 1.0f));
     
-    Ray laser(Vector3(0, 0, 0), Vector3(0, 0, 1));
+    Raycast laser(vector3(0, 0, 0), vector3(0, 0, 1));
     
     auto impact = scene.castRay(laser);
     
@@ -89,21 +89,25 @@ int main() {
     camera.fovy = 45.0f; 
     camera.projection = CAMERA_PERSPECTIVE;  
 
-    Renderer renderer(camera);
+    Renderer renderer;
     taskScheduler.insertEvent(Event([&taskScheduler](float dt) {
     if (WindowShouldClose()) {
         taskScheduler.stop();
     }
     }, 0, false));
 
-    taskScheduler.insertEvent(Event([&renderer, posPool](float dt){
-      renderer.beginFrame();
+    taskScheduler.insertEvent(Event([&renderer, posPool, &camera](float dt){
+      renderer.beginFrame(camera);
       for (auto pos : posPool->dense) {
+        renderer.drawGrid(20, 1.0f);  
+
         renderer.drawCube(pos.pos, 5.5f, 1.2f, 3.0f, BLUE);
       }
       renderer.endFrame();
     }, 10, false));
-
+    taskScheduler.insertEvent(Event([&camera](float dt){
+      UpdateCamera(&camera, CAMERA_ORBITAL);
+    }, 5, false));
     
     taskScheduler.start();
     CloseWindow();
