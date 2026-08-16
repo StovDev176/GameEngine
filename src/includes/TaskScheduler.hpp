@@ -40,7 +40,6 @@ public:
             std::chrono::duration<float> dt = currentTime - lastTime;
             lastTime = currentTime;
             update(dt.count());
-            std::this_thread::sleep_for(std::chrono::milliseconds(16));
         }
     }
 

@@ -15,8 +15,10 @@ public:
         ClearBackground(BLACK);
         BeginMode3D(cam);
     } 
-    void endFrame() {
+    void end3D() {
         EndMode3D();
+    }
+    void endFrame() {
         EndDrawing();
     }
 
@@ -28,5 +30,10 @@ public:
     }
     void drawGrid(int slices, float spacing) {
         DrawGrid(slices, spacing);
+    }
+    void drawUI() {
+        DrawFPS(10, 10);
+    
+        DrawText("Project Maria Engine", 10, 40, 20, RAYWHITE);
     }
 };

@@ -31,7 +31,6 @@ void movementSystem(Registry& registry, float dt) {
     Position* posPtr = positionPool->getComponent(entityId);
     if (posPtr != nullptr) {
       posPtr->pos = posPtr->pos + (vel.vel * dt);
-      std::cout << "Successfully updated the position, this is new position :  " << posPtr->pos << std::endl;
     }
 
   }
@@ -120,12 +119,46 @@ int main() {
         }
 
       }
+      renderer.end3D();
+      renderer.drawUI();
       renderer.endFrame();
     }, 10, false));
     taskScheduler.insertEvent(Event([&camera](float dt){
       UpdateCamera(&camera, CAMERA_ORBITAL);
     }, 5, false));
     
+    taskScheduler.insertEvent(Event([posPool, meshPool, &camera](float dt){
+      if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        Vector2 mousePos = GetMousePosition();
+        Ray raylibRay = GetMouseRay(mousePos, camera);
+
+        Raycast raycast(
+          vector3(raylibRay.position.x, raylibRay.position.y, raylibRay.position.z), 
+          vector3(raylibRay.direction.x, raylibRay.direction.y, raylibRay.direction.z) 
+        );
+        
+        for (size_t i = 0; i < meshPool->dense.size(); i++) {
+          uint32_t id = meshPool->denseIds[i];
+          MeshComponent* meshPtr = &meshPool->dense[i];
+          Position* posPtr = posPool->getComponent(id);
+
+          if (posPtr != nullptr && meshPtr != nullptr) {
+            Sphere tempSphere(posPtr->pos, meshPtr->size);
+            auto hit = tempSphere.intersect(raycast);
+
+            if (hit != std::nullopt) {
+              meshPtr->color = RED; 
+              break; 
+            }
+          }
+        }
+      }
+    }, 4, false)); 
+
+    taskScheduler.insertEvent(Event([&registry](float dt){
+      movementSystem(registry, dt);
+    }, 2, false));
+
     taskScheduler.start();
     CloseWindow();
     return 0;

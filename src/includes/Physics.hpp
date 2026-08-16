@@ -1,5 +1,6 @@
 #pragma once
 #include "Math.hpp"
+#include "ECS.hpp"
 #include <memory>
 #include <iostream>
 #include <optional>
@@ -64,3 +65,13 @@ public:
         return std::nullopt;
     }
 };
+
+struct RigidBodyComponent {
+  float mass;
+  float bounciness;
+  bool applyGravity = false;
+}
+
+void applyPhysics(Registry& registry, float dt) {
+
+}
