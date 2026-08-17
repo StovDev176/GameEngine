@@ -2,6 +2,7 @@
 
 #include "raylib.h"
 #include <iostream>
+#include "Math.hpp"
 
 enum class PrimitiveType {SPHERE, CUBE};
 

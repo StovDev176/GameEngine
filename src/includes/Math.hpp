@@ -28,6 +28,10 @@ struct vector3 {
     return vector3(x * scalar, y * scalar, z * scalar);
   }
 
+  vector3 operator/(float scalar) const {
+    return vector3(x / scalar, y / scalar, z / scalar);
+  }
+
   float Dot(const vector3& other) const {
     return ((x * other.x) + (y * other.y) + (z * other.z));
   }
@@ -35,6 +39,18 @@ struct vector3 {
   vector3 Lerp(const vector3& other, float t) const {
     return vector3(x + (other.x - x) * t, y + (other.y - y) * t, z + (other.z - z) * t);
   }
+
+  void operator+=(const vector3& other) {
+    x += other.x;
+    y += other.y;
+    z += other.z;
+}
+
+void operator-=(const vector3& other) {
+    x -= other.x;
+    y -= other.y;
+    z -= other.z;
+}
 };
 
 std::ostream& operator<<(std::ostream& os, const vector3& v) {

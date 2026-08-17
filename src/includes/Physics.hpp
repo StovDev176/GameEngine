@@ -1,6 +1,7 @@
 #pragma once
 #include "Math.hpp"
 #include "ECS.hpp"
+#include "Components.hpp"
 #include <memory>
 #include <iostream>
 #include <optional>
@@ -66,12 +67,75 @@ public:
     }
 };
 
-struct RigidBodyComponent {
-  float mass;
-  float bounciness;
-  bool applyGravity = false;
+
+struct RigidBody {
+    vector3 velocity;
+    vector3 acceleration;
+    float mass;
+    float bounciness;
+    vector3 netForce;
+};
+
+struct TransformComponent {
+    vector3 position;
+    vector3 rotation;
+    vector3 scale;
+};
+
+struct AABB {
+    vector3 min; 
+    vector3 max; 
+};
+
+bool checkCollision(AABB a, AABB b) {
+    return (a.min.x <= b.max.x && a.max.x >= b.min.x) &&
+           (a.min.y <= b.max.y && a.max.y >= b.min.y) &&
+           (a.min.z <= b.max.z && a.max.z >= b.min.z);
 }
 
-void applyPhysics(Registry& registry, float dt) {
-
+void applyGravity(RigidBody& rb) {
+  vector3 gravityForce = vector3(0, (-9.81f * rb.mass), 0);
+  rb.netForce += gravityForce;
 }
+
+void applyForce(RigidBody& rb, vector3 force) {
+  rb.acceleration += (force/rb.mass);
+}
+
+void updatePhysics(RigidBody& rb,TransformComponent& tfC,  float dt) {
+  rb.acceleration = vector3(0, 0, 0);
+
+  if (rb.mass > 0.0f) {
+    applyForce(rb, rb.netForce);
+  }
+  rb.velocity += (rb.acceleration * dt);
+  tfC.position += (rb.velocity * dt);
+
+  rb.netForce = vector3(0, 0, 0);
+}
+
+void collide(RigidBody& rb1, RigidBody& rb2, float restution) {
+  vector3 relativeVelocity = rb1.velocity - rb2.velocity;
+
+  if (relativeVelocity.y > 0) {return;}
+
+  float invMassA = 1.0f / rb1.mass;
+  float invMassB = 1.0f / rb2.mass;
+
+  float impulseScalar = -(1.0f + restution) * relativeVelocity.y / (invMassA + invMassB);
+
+  rb1.velocity.y += impulseScalar * invMassA;
+  rb2.velocity.y -= impulseScalar * invMassB;
+}
+
+void applyFriction(RigidBody& rb, float frictionCoefficient) {
+    rb.velocity.x *= frictionCoefficient;
+    rb.velocity.z *= frictionCoefficient;
+}
+
+void posCorrection(AABB a, AABB b, TransformComponent& tfC) {
+  float penetration = b.max.y - a.min.y;
+  if (penetration > 0) {
+    tfC.position.y += penetration;
+  }
+} 
