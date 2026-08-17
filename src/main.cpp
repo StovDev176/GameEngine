@@ -17,9 +17,12 @@ int main() {
     Entity player = registry.create();
     Entity enemy = registry.create();
     Entity mesh1 = registry.create();
+    Entity baseplate = registry.create();
     ComponentPool<RigidBody>* rigidBodyPool = registry.getComponentPool<RigidBody>();
     ComponentPool<TransformComponent>* tfcPool = registry.getComponentPool<TransformComponent>();
     ComponentPool<MeshComponent>* meshPool = registry.getComponentPool<MeshComponent>();
+    ComponentPool<AABB>* AABB_Pool = registry.getComponentPool<AABB>();
+
     rigidBodyPool->addData(
       RigidBody{
         vector3(1.0f, 2.0f, 0.0f), 
@@ -27,16 +30,30 @@ int main() {
         5.0f,
         0.5f,
         vector3(0.0f, 0.0f, 0.0f),}, mesh1);
-     tfcPool->addData(TransformComponent{
-       vector3(10.0f, 10.0f, 10.0f),
-       vector3(90.0f, 20.0f, 0.0f),
-       vector3(5.0f, 2.0f, 1.0f),
-     }, mesh1);   
+    rigidBodyPool->addData(
+      RigidBody{
+        vector3(0.0f, 0.0f, 0.0f), 
+        vector3(0.0f, 0.0f, 0.0f),
+        1000000.0f,
+        0.0f,
+        vector3(0.0f, 0.0f, 0.0f),}, baseplate);
+    tfcPool->addData(TransformComponent{
+      vector3(10.0f, 10.0f, 10.0f), // position
+      vector3(90.0f, 20.0f, 0.0f), // rotation
+      vector3(5.0f, 2.0f, 1.0f), // scale
+    }, mesh1); 
+    tfcPool->addData(TransformComponent{
+      vector3(0.0f, 0.0f, 0.0f),
+      vector3(0.0f, 0.0f, 0.0f),
+      vector3(100.0f, 100.0f, 1.0f),
+    }, baseplate);   
 
-    meshPool->addData(MeshComponent(PrimitiveType::SPHERE, 3.0f, BLUE), mesh1);
+
+    meshPool->addData(MeshComponent(PrimitiveType::SPHERE, BLUE), mesh1);
+    meshPool->addData(MeshComponent(PrimitiveType::CUBE, GRAY), baseplate);
     TaskScheduler taskScheduler;
     Camera3D camera = {0};
-    camera.position = (Vector3){ 10.0f, 10.0f, 10.0f }; 
+    camera.position = (Vector3){ 20.0f, 20.0f, 20.0f }; 
     camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };     
     camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          
     camera.fovy = 45.0f; 
@@ -73,9 +90,6 @@ int main() {
       renderer.drawUI();
       renderer.endFrame();
     }, 10, false));
-    taskScheduler.insertEvent(Event([&camera](float dt){
-      UpdateCamera(&camera, CAMERA_ORBITAL);
-    }, 5, false));
     taskScheduler.insertEvent(Event([rigidBodyPool, tfcPool](float dt){
       for (size_t i = 0; i < rigidBodyPool->dense.size(); i++) {
         uint32_t id = rigidBodyPool->denseIds[i];
@@ -116,7 +130,30 @@ int main() {
         }
       }
     }, 4, false)); 
+    taskScheduler.insertEvent(Event([&registry, tfcPool, rigidBodyPool](float dt){
+      for (size_t i = 0; i < tfcPool->dense.size(); i++) {
+        
+        Entity idA = tfcPool->denseIds[i];
+        TransformComponent* tfcA = &tfcPool->dense[i];
+        AABB boxA = createAABB(*tfcA); 
+        for (size_t j = i + 1; j < tfcPool->dense.size(); j++) {
+            
+            Entity idB = tfcPool->denseIds[j];
+            TransformComponent* tfcB = &tfcPool->dense[j];
+            AABB boxB = createAABB(*tfcB);
 
+            if (checkCollision(boxA, boxB)) {
+                RigidBody* rbA = rigidBodyPool->getComponent(idA);
+                RigidBody* rbB = rigidBodyPool->getComponent(idB);
+
+                if (rbA != nullptr && rbB != nullptr) {
+                    collide(*rbA, *rbB, 0.5f); 
+                    posCorrection(boxA, boxB, *tfcA); 
+                }
+            }
+        }
+      }
+    }, 2, false));
     taskScheduler.start();
     CloseWindow();
     return 0;

@@ -8,8 +8,7 @@ enum class PrimitiveType {SPHERE, CUBE};
 
 struct MeshComponent {
     PrimitiveType meshType;
-    float size;
     Color color;
 
-    MeshComponent(PrimitiveType meshType, float size, Color color) : color(color), size(size), meshType(meshType) {}
+    MeshComponent(PrimitiveType meshType, Color color) : color(color), meshType(meshType) {}
 };

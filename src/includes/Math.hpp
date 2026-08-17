@@ -5,6 +5,8 @@
 struct vector3 {
   float x, y, z;
 
+  vector3() : x(0.0f), y(0.0f), z(0.0f) {} 
+
   vector3(float x, float y, float z) : x(x), y(y), z(z) {}
   
   float Magnitude() const {

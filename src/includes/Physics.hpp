@@ -139,3 +139,11 @@ void posCorrection(AABB a, AABB b, TransformComponent& tfC) {
     tfC.position.y += penetration;
   }
 } 
+
+AABB createAABB(const TransformComponent& tf) {
+    AABB box;
+    vector3 halfScale = tf.scale * 0.5f; 
+    box.min = tf.position - halfScale;
+    box.max = tf.position + halfScale;
+    return box;
+}
