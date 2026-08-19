@@ -67,7 +67,6 @@ public:
     }
 };
 
-
 struct RigidBody {
     vector3 velocity;
     vector3 acceleration;
@@ -86,6 +85,45 @@ struct AABB {
     vector3 min; 
     vector3 max; 
 };
+
+struct Manifold {
+    vector3 normal;     
+    float penetration;
+    bool colliding;
+};
+
+Manifold computeManifold(const AABB& a, const AABB& b) {
+    Manifold m;
+    m.colliding = false;
+
+    float overlapX = std::min(a.max.x, b.max.x) - std::max(a.min.x, b.min.x);
+    float overlapY = std::min(a.max.y, b.max.y) - std::max(a.min.y, b.min.y);
+    float overlapZ = std::min(a.max.z, b.max.z) - std::max(a.min.z, b.min.z);
+
+    if (overlapX <= 0.0f || overlapY <= 0.0f || overlapZ <= 0.0f) {
+        return m;
+    }
+
+    m.colliding = true;
+
+    if (overlapX < overlapY && overlapX < overlapZ) {
+        m.penetration = overlapX;
+        m.normal = vector3((a.max.x < b.max.x) ? -1.0f : 1.0f, 0.0f, 0.0f);
+    } else if (overlapY < overlapZ) {
+        m.penetration = overlapY;
+        m.normal = vector3(0.0f, (a.max.y < b.max.y) ? -1.0f : 1.0f, 0.0f);
+    } else {
+        m.penetration = overlapZ;
+        m.normal = vector3(0.0f, 0.0f, (a.max.z < b.max.z) ? -1.0f : 1.0f);
+    }
+
+    return m;
+}
+
+inline float invMass(float mass) {
+    return (mass > 0.0f) ? (1.0f / mass) : 0.0f;
+}
+
 
 bool checkCollision(AABB a, AABB b) {
     return (a.min.x <= b.max.x && a.max.x >= b.min.x) &&
@@ -114,31 +152,47 @@ void updatePhysics(RigidBody& rb,TransformComponent& tfC,  float dt) {
   rb.netForce = vector3(0, 0, 0);
 }
 
-void collide(RigidBody& rb1, RigidBody& rb2, float restution) {
-  vector3 relativeVelocity = rb1.velocity - rb2.velocity;
+void collide(RigidBody& rb1, RigidBody& rb2, const vector3& normal, float restitution) {
+    vector3 relativeVelocity = rb1.velocity - rb2.velocity;
+    float velAlongNormal = relativeVelocity.Dot(normal);
+    if (velAlongNormal > 0.0f) return;
 
-  if (relativeVelocity.y > 0) {return;}
+    float invMassA = invMass(rb1.mass);
+    float invMassB = invMass(rb2.mass);
 
-  float invMassA = 1.0f / rb1.mass;
-  float invMassB = 1.0f / rb2.mass;
+    if (invMassA + invMassB == 0.0f) return;
 
-  float impulseScalar = -(1.0f + restution) * relativeVelocity.y / (invMassA + invMassB);
+    const float restitutionThreshold = 0.5f;
+    float e = (std::abs(velAlongNormal) < restitutionThreshold) ? 0.0f : restitution;
 
-  rb1.velocity.y += impulseScalar * invMassA;
-  rb2.velocity.y -= impulseScalar * invMassB;
+    float impulseScalar = -(1.0f + e) * velAlongNormal / (invMassA + invMassB);
+    vector3 impulse = normal * impulseScalar;
+
+    rb1.velocity += impulse * invMassA;
+    rb2.velocity -= impulse * invMassB;
 }
 
-void applyFriction(RigidBody& rb, float frictionCoefficient) {
-    rb.velocity.x *= frictionCoefficient;
-    rb.velocity.z *= frictionCoefficient;
+void applyFriction(RigidBody& rb, float frictionCoefficient, float dt) {
+    float factor = std::pow(frictionCoefficient, dt);
+    rb.velocity.x *= factor;
+    rb.velocity.z *= factor;
 }
 
-void posCorrection(AABB a, AABB b, TransformComponent& tfC) {
-  float penetration = b.max.y - a.min.y;
-  if (penetration > 0) {
-    tfC.position.y += penetration;
-  }
-} 
+void posCorrection(const Manifold& m, RigidBody& rb1, RigidBody& rb2,
+                    TransformComponent& t1, TransformComponent& t2) {
+    const float slop = 0.01f;   
+    const float percent = 0.4f; 
+
+    float invMassA = invMass(rb1.mass);
+    float invMassB = invMass(rb2.mass);
+    if (invMassA + invMassB == 0.0f) return;
+
+    float correctionMag = std::max(m.penetration - slop, 0.0f) / (invMassA + invMassB) * percent;
+    vector3 correction = m.normal * correctionMag;
+
+    t1.position -= correction * invMassA;
+    t2.position += correction * invMassB;
+}
 
 AABB createAABB(const TransformComponent& tf) {
     AABB box;

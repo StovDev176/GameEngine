@@ -34,26 +34,26 @@ int main() {
       RigidBody{
         vector3(0.0f, 0.0f, 0.0f), 
         vector3(0.0f, 0.0f, 0.0f),
-        1000000.0f,
+        0.0f,
         0.0f,
         vector3(0.0f, 0.0f, 0.0f),}, baseplate);
     tfcPool->addData(TransformComponent{
-      vector3(10.0f, 10.0f, 10.0f), // position
+      vector3(0.0f, 10.0f, 0.0f), // position
       vector3(90.0f, 20.0f, 0.0f), // rotation
       vector3(5.0f, 2.0f, 1.0f), // scale
     }, mesh1); 
     tfcPool->addData(TransformComponent{
       vector3(0.0f, 0.0f, 0.0f),
       vector3(0.0f, 0.0f, 0.0f),
-      vector3(100.0f, 100.0f, 1.0f),
+      vector3(100.0f, 100.0f, 100.0f),
     }, baseplate);   
 
 
     meshPool->addData(MeshComponent(PrimitiveType::SPHERE, BLUE), mesh1);
-    meshPool->addData(MeshComponent(PrimitiveType::CUBE, GRAY), baseplate);
+    meshPool->addData(MeshComponent(PrimitiveType::CUBE, BLUE), baseplate);
     TaskScheduler taskScheduler;
     Camera3D camera = {0};
-    camera.position = (Vector3){ 20.0f, 20.0f, 20.0f }; 
+    camera.position = (Vector3){ -20.0f, -20.0f, -20.0f }; 
     camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };     
     camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          
     camera.fovy = 45.0f; 
@@ -135,21 +135,21 @@ int main() {
         
         Entity idA = tfcPool->denseIds[i];
         TransformComponent* tfcA = &tfcPool->dense[i];
+        RigidBody* rb1 = rigidBodyPool->getComponent(idA);
+        if (rb1 == nullptr) {continue;}
         AABB boxA = createAABB(*tfcA); 
         for (size_t j = i + 1; j < tfcPool->dense.size(); j++) {
             
             Entity idB = tfcPool->denseIds[j];
             TransformComponent* tfcB = &tfcPool->dense[j];
             AABB boxB = createAABB(*tfcB);
-
-            if (checkCollision(boxA, boxB)) {
-                RigidBody* rbA = rigidBodyPool->getComponent(idA);
-                RigidBody* rbB = rigidBodyPool->getComponent(idB);
-
-                if (rbA != nullptr && rbB != nullptr) {
-                    collide(*rbA, *rbB, 0.5f); 
-                    posCorrection(boxA, boxB, *tfcA); 
-                }
+            RigidBody* rb2 = rigidBodyPool->getComponent(idB);
+            if (rb2 == nullptr) {continue;}
+            Manifold m = computeManifold(boxA, boxB);
+            if (m.colliding) {
+              float res = std::min(rb1->bounciness, rb2->bounciness);
+              collide(*rb1, *rb2, m.normal, res);
+              posCorrection(m, *rb1, *rb2, *tfcA, *tfcB);
             }
         }
       }
