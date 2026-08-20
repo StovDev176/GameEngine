@@ -25,7 +25,7 @@ int main() {
 
     rigidBodyPool->addData(
       RigidBody{
-        vector3(1.0f, 2.0f, 0.0f), 
+        vector3(1.0f, 2.0f, 0.0f),
         vector3(0.0f, 0.0f, 0.0f),
         5.0f,
         0.5f,
@@ -35,25 +35,25 @@ int main() {
         vector3(0.0f, 0.0f, 0.0f), 
         vector3(0.0f, 0.0f, 0.0f),
         0.0f,
-        0.0f,
+        0.5f,
         vector3(0.0f, 0.0f, 0.0f),}, baseplate);
     tfcPool->addData(TransformComponent{
-      vector3(0.0f, 10.0f, 0.0f), // position
+      vector3(0.0f, 100.0f, 0.0f), // position
       vector3(90.0f, 20.0f, 0.0f), // rotation
-      vector3(5.0f, 2.0f, 1.0f), // scale
+      vector3(1.0f, 1.0f, 1.0f), // scale
     }, mesh1); 
     tfcPool->addData(TransformComponent{
+      vector3(0.0f, -0.5f, 0.0f),
       vector3(0.0f, 0.0f, 0.0f),
-      vector3(0.0f, 0.0f, 0.0f),
-      vector3(100.0f, 100.0f, 100.0f),
+      vector3(100.0f, 1.0f, 100.0f),
     }, baseplate);   
 
 
-    meshPool->addData(MeshComponent(PrimitiveType::SPHERE, BLUE), mesh1);
+    meshPool->addData(MeshComponent(PrimitiveType::SPHERE, GREEN), mesh1);
     meshPool->addData(MeshComponent(PrimitiveType::CUBE, BLUE), baseplate);
     TaskScheduler taskScheduler;
     Camera3D camera = {0};
-    camera.position = (Vector3){ -20.0f, -20.0f, -20.0f }; 
+    camera.position = (Vector3){ 20.0f, 20.0f, 20.0f }; 
     camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };     
     camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          
     camera.fovy = 45.0f; 
@@ -68,7 +68,6 @@ int main() {
 
     taskScheduler.insertEvent(Event([&renderer, &camera, meshPool, tfcPool](float dt){
       renderer.beginFrame(camera);
-      renderer.drawGrid(30, 1.0f);
       for (int i=0; i<meshPool->dense.size();i++) {
         uint32_t id = meshPool->denseIds[i];
         MeshComponent* meshPtr = &meshPool->dense[i];

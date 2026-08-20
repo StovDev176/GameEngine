@@ -162,7 +162,7 @@ void collide(RigidBody& rb1, RigidBody& rb2, const vector3& normal, float restit
 
     if (invMassA + invMassB == 0.0f) return;
 
-    const float restitutionThreshold = 0.5f;
+    const float restitutionThreshold = 0.1f;
     float e = (std::abs(velAlongNormal) < restitutionThreshold) ? 0.0f : restitution;
 
     float impulseScalar = -(1.0f + e) * velAlongNormal / (invMassA + invMassB);
@@ -181,7 +181,7 @@ void applyFriction(RigidBody& rb, float frictionCoefficient, float dt) {
 void posCorrection(const Manifold& m, RigidBody& rb1, RigidBody& rb2,
                     TransformComponent& t1, TransformComponent& t2) {
     const float slop = 0.01f;   
-    const float percent = 0.4f; 
+    const float percent = 0.8f; 
 
     float invMassA = invMass(rb1.mass);
     float invMassB = invMass(rb2.mass);
@@ -190,8 +190,8 @@ void posCorrection(const Manifold& m, RigidBody& rb1, RigidBody& rb2,
     float correctionMag = std::max(m.penetration - slop, 0.0f) / (invMassA + invMassB) * percent;
     vector3 correction = m.normal * correctionMag;
 
-    t1.position -= correction * invMassA;
-    t2.position += correction * invMassB;
+    t1.position += correction * invMassA;
+    t2.position -= correction * invMassB;
 }
 
 AABB createAABB(const TransformComponent& tf) {
