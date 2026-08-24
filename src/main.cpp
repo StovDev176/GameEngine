@@ -59,6 +59,10 @@ int main() {
     camera.fovy = 45.0f; 
     camera.projection = CAMERA_PERSPECTIVE;  
 
+    SetTargetFPS(30);
+
+    auto start = std::chrono::high_resolution_clock::now();
+
     Renderer renderer;
     taskScheduler.insertEvent(Event([&taskScheduler](float dt) {
     if (WindowShouldClose()) {
@@ -129,7 +133,7 @@ int main() {
         }
       }
     }, 4, false)); 
-    taskScheduler.insertEvent(Event([&registry, tfcPool, rigidBodyPool](float dt){
+    taskScheduler.insertEvent(Event([&registry, tfcPool, rigidBodyPool, start](float dt){
       for (size_t i = 0; i < tfcPool->dense.size(); i++) {
         
         Entity idA = tfcPool->denseIds[i];
@@ -146,6 +150,9 @@ int main() {
             if (rb2 == nullptr) {continue;}
             Manifold m = computeManifold(boxA, boxB);
             if (m.colliding) {
+              auto end = std::chrono::high_resolution_clock::now();
+              auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+              std::cout << duration << std::endl;
               float res = std::min(rb1->bounciness, rb2->bounciness);
               collide(*rb1, *rb2, m.normal, res);
               posCorrection(m, *rb1, *rb2, *tfcA, *tfcB);
@@ -153,7 +160,9 @@ int main() {
         }
       }
     }, 2, false));
-    taskScheduler.start();
+    while (!WindowShouldClose) {
+      taskScheduler.update(GetFrameTime())
+    }
     CloseWindow();
     return 0;
 }

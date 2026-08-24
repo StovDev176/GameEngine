@@ -1,5 +1,6 @@
 #pragma once
 #include "ECS.hpp"
+#include "raylib.h"
 #include <iostream>
 #include "Math.hpp"
 #include <chrono>
@@ -22,6 +23,7 @@ class TaskScheduler {
 private:    
     std::vector<Event> events;
     bool isRunning = true;
+    float accumulator = 0.0f;
 public:
     void insertEvent(const Event& event) {
         events.push_back(event);
@@ -43,16 +45,24 @@ public:
         }
     }
 
-    void update(float dt) {
-        for (auto& e : events) {
-            e.event(dt);
+    void update(float frameTime) {    
+        const float FIXED_DT = 1/60.0f;         
+        if (frameTime > 0.25f) frameTime = 0.25f;  
+        accumulator += frameTime;
+
+        while (accumulator >= FIXED_DT) { 
+            for (auto& e : events)
+                if (!e.oneShot) e.event(FIXED_DT);  
+            accumulator -= FIXED_DT;
         }
+
+        for (auto& e : events)                
+            if (e.oneShot) e.event(frameTime);
+
         events.erase(
-            std::remove_if(events.begin(), events.end(), 
-                [](const Event& e) { return e.oneShot; }
-            ), 
-            events.end()
-        );
+            std::remove_if(events.begin(), events.end(),
+                [](const Event& e) { return e.oneShot; }),
+            events.end());
     }
     void stop() {
         isRunning = false;
