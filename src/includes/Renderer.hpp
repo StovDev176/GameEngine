@@ -3,12 +3,13 @@
 #include "Math.hpp"
 #include "raylib.h"
 #include "Physics.hpp"
+#include "ECS.hpp"
 
 class Renderer {
 public:
     Renderer() {
         InitWindow(800, 450, "Project Maria");
-        SetTargetFPS(60);
+        SetTargetFPS(30);
     }   
     void beginFrame(const Camera3D& cam) {
         BeginDrawing();
