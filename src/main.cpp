@@ -58,41 +58,7 @@ int main() {
     camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          
     camera.fovy = 45.0f; 
     camera.projection = CAMERA_PERSPECTIVE;  
-
-    SetTargetFPS(30);
-
-    auto start = std::chrono::high_resolution_clock::now();
-
     Renderer renderer;
-    taskScheduler.insertEvent(Event([&taskScheduler](float dt) {
-    if (WindowShouldClose()) {
-        taskScheduler.stop();
-    }
-    }, 0, false));
-
-    taskScheduler.insertEvent(Event([&renderer, &camera, meshPool, tfcPool](float dt){
-      renderer.beginFrame(camera);
-      for (int i=0; i<meshPool->dense.size();i++) {
-        uint32_t id = meshPool->denseIds[i];
-        MeshComponent* meshPtr = &meshPool->dense[i];
-        TransformComponent* tfCPointer = tfcPool->getComponent(id);
-
-        if (tfCPointer != nullptr && meshPtr != nullptr) {
-          switch(meshPtr->meshType) {
-            case PrimitiveType::SPHERE:
-              renderer.drawSphere({tfCPointer->position.x, tfCPointer->position.y, tfCPointer->position.z}, tfCPointer->scale.x, meshPtr->color);
-              break;
-            case PrimitiveType::CUBE:
-              renderer.drawCube({tfCPointer->position.x, tfCPointer->position.y, tfCPointer->position.z}, tfCPointer->scale.x, tfCPointer->scale.y, tfCPointer->scale.z, meshPtr->color);
-              break;
-          }
-        }
-
-      }
-      renderer.end3D();
-      renderer.drawUI();
-      renderer.endFrame();
-    }, 10, false));
     taskScheduler.insertEvent(Event([rigidBodyPool, tfcPool](float dt){
       for (size_t i = 0; i < rigidBodyPool->dense.size(); i++) {
         uint32_t id = rigidBodyPool->denseIds[i];
@@ -133,6 +99,9 @@ int main() {
         }
       }
     }, 4, false)); 
+
+    auto start = std::chrono::high_resolution_clock::now();
+
     taskScheduler.insertEvent(Event([&registry, tfcPool, rigidBodyPool, start](float dt){
       for (size_t i = 0; i < tfcPool->dense.size(); i++) {
         
@@ -151,8 +120,8 @@ int main() {
             Manifold m = computeManifold(boxA, boxB);
             if (m.colliding) {
               auto end = std::chrono::high_resolution_clock::now();
-              auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-              std::cout << duration << std::endl;
+              auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+              std::cout << duration << "\n";
               float res = std::min(rb1->bounciness, rb2->bounciness);
               collide(*rb1, *rb2, m.normal, res);
               posCorrection(m, *rb1, *rb2, *tfcA, *tfcB);
@@ -160,8 +129,29 @@ int main() {
         }
       }
     }, 2, false));
-    while (!WindowShouldClose) {
-      taskScheduler.update(GetFrameTime())
+    while (!WindowShouldClose()) {
+      taskScheduler.update(GetFrameTime());
+      renderer.beginFrame(camera);
+      for (int i=0; i<meshPool->dense.size();i++) {
+        uint32_t id = meshPool->denseIds[i];
+        MeshComponent* meshPtr = &meshPool->dense[i];
+        TransformComponent* tfCPointer = tfcPool->getComponent(id);
+
+        if (tfCPointer != nullptr && meshPtr != nullptr) {
+          switch(meshPtr->meshType) {
+            case PrimitiveType::SPHERE:
+              renderer.drawSphere({tfCPointer->position.x, tfCPointer->position.y, tfCPointer->position.z}, tfCPointer->scale.x, meshPtr->color);
+              break;
+            case PrimitiveType::CUBE:
+              renderer.drawCube({tfCPointer->position.x, tfCPointer->position.y, tfCPointer->position.z}, tfCPointer->scale.x, tfCPointer->scale.y, tfCPointer->scale.z, meshPtr->color);
+              break;
+          }
+        }
+
+      }
+      renderer.end3D();
+      renderer.drawUI();
+      renderer.endFrame();
     }
     CloseWindow();
     return 0;
