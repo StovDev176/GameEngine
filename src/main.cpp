@@ -13,6 +13,8 @@
 #include <optional>
 #include <chrono>
 
+
+
 int main() {
     Registry registry;
     Entity player = registry.create();
@@ -101,9 +103,8 @@ int main() {
       }
     }, 4, false)); 
 
-    auto start = std::chrono::high_resolution_clock::now();
 
-    taskScheduler.insertEvent(Event([&registry, tfcPool, rigidBodyPool, start](float dt){
+    taskScheduler.insertEvent(Event([&registry, tfcPool, rigidBodyPool](float dt){
       for (size_t i = 0; i < tfcPool->dense.size(); i++) {
         
         Entity idA = tfcPool->denseIds[i];
@@ -120,9 +121,6 @@ int main() {
             if (rb2 == nullptr) {continue;}
             Manifold m = computeManifold(boxA, boxB);
             if (m.colliding) {
-              auto end = std::chrono::high_resolution_clock::now();
-              auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-              std::cout << duration << "\n";
               float res = std::min(rb1->bounciness, rb2->bounciness);
               collide(*rb1, *rb2, m.normal, res);
               posCorrection(m, *rb1, *rb2, *tfcA, *tfcB);
@@ -130,12 +128,10 @@ int main() {
         }
       }
     }, 2, false));
-
+    Entity selectedEntity = mesh1;
     while (!WindowShouldClose()) {
       taskScheduler.update(GetFrameTime());
-      rlImGuiBegin();
-      ImGui::ShowDemoWindow();
-      rlImGuiEnd();
+
 
       renderer.beginFrame(camera);
       for (int i=0; i<meshPool->dense.size();i++) {
@@ -155,8 +151,12 @@ int main() {
         }
 
       }
+
       renderer.end3D();
       renderer.drawUI();
+      rlImGuiBegin();
+      drawECSInspector(registry, selectedEntity, tfcPool, meshPool, rigidBodyPool);
+      rlImGuiEnd();
       renderer.endFrame();
     }
     rlImGuiShutdown();
