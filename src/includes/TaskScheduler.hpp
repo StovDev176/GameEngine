@@ -32,20 +32,10 @@ public:
             return e1.priority < e2.priority;
         });
     }
-
-    void start() {
-        auto lastTime = std::chrono::high_resolution_clock::now();
-
-        while (isRunning) {
-            auto currentTime = std::chrono::high_resolution_clock::now();
-
-            std::chrono::duration<float> dt = currentTime - lastTime;
-            lastTime = currentTime;
-            update(dt.count());
-        }
-    }
-
     void update(float frameTime) {    
+        if (!isRunning) {
+            return;
+        }
         const float FIXED_DT = 1/60.0f;         
         if (frameTime > 0.25f) frameTime = 0.25f;  
         accumulator += frameTime;
@@ -66,5 +56,8 @@ public:
     }
     void stop() {
         isRunning = false;
+    }
+    void start() {
+        isRunning = true;
     }
 };
