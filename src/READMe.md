@@ -1,4 +1,4 @@
-#Deep-Dive Technical Documentation & Code Architecture:
+Deep-Dive Technical Documentation & Code Architecture:
 
 This document provides a detailed walkthrough of the inner workings, data structures, and implementation choices   behind this C++ 3D Game 
 
