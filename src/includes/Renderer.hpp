@@ -4,12 +4,14 @@
 #include "raylib.h"
 #include "Physics.hpp"
 #include "ECS.hpp"
+#include "imgui_wrapper.hpp"
 
 class Renderer {
 public:
     Renderer() {
         InitWindow(800, 450, "Project Maria");
         SetTargetFPS(30);
+        rlImGuiSetup(true);
     }   
     void beginFrame(const Camera3D& cam) {
         BeginDrawing();

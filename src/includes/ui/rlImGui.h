@@ -28,6 +28,7 @@
 
 #pragma once
 
+#define NO_FONT_AWESOME
 #include "raylib.h"
 
 // Function specifiers in case library is build/used as a shared library

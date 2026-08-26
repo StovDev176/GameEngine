@@ -5,6 +5,7 @@
 #include "includes/TaskScheduler.hpp"
 #include "includes/Renderer.hpp"
 #include "includes/Components.hpp"
+#include "includes/ui/imgui_wrapper.hpp"
 #include <iostream>
 #include <cmath>
 #include <memory>
@@ -129,8 +130,13 @@ int main() {
         }
       }
     }, 2, false));
+
     while (!WindowShouldClose()) {
       taskScheduler.update(GetFrameTime());
+      rlImGuiBegin();
+      ImGui::ShowDemoWindow();
+      rlImGuiEnd();
+
       renderer.beginFrame(camera);
       for (int i=0; i<meshPool->dense.size();i++) {
         uint32_t id = meshPool->denseIds[i];
@@ -153,6 +159,7 @@ int main() {
       renderer.drawUI();
       renderer.endFrame();
     }
+    rlImGuiShutdown();
     CloseWindow();
     return 0;
 }
