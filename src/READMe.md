@@ -1,6 +1,6 @@
-Deep-Dive Technical Documentation & Code Architecture
+Deep-Dive Technical Documentation & Code Architecture:
 
-This document provides a detailed walkthrough of the inner workings, data structures, and implementation choices behind this C++ 3D Game 
+This document provides a detailed walkthrough of the inner workings, data structures, and implementation choices   behind this C++ 3D Game 
 
 
 1. Data-Oriented ECS Architecture (Registry & ComponentPool)
@@ -11,7 +11,9 @@ ComponentPool<T>: Uses a Sparse-Set algorithm (Dense/Sparse vectors) to store co
 
 memory:std::vector<T> dense: Stores actual component instances (TransformComponent, RigidBody) packed next to each other in memory.std::vector<uint32_t> 
 
-denseIds: Maps the dense index back to the Entity ID.getComponent(Entity id): Performs an O(1) lookup to fetch a direct pointer to the memory location of the component.Why this matters: When iterating over components in systems (e.g., physics or rendering), the CPU reads contiguous memory arrays rather than chasing pointers across heap locations, preventing CPU cache misses.2. Physics & Collision Resolution PipelinePhysics execution is decoupled into discrete stages handled within the task scheduling pipeline:[Apply Forces / Gravity] ──> [Integrate Velocity & Position] ──> [AABB Manifold Generation] ──> [Impulse Response & Correction]
+denseIds: Maps the dense index back to the Entity ID.getComponent(Entity id): Performs an O(1) lookup to fetch a direct pointer to the memory location of the component.Why this matters: When iterating over components in systems (e.g., physics or rendering), the CPU reads contiguous memory arrays rather than chasing pointers across heap locations, preventing CPU cache misses.
+
+2. Physics & Collision Resolution PipelinePhysics execution is decoupled into discrete stages handled within the task scheduling pipeline:[Apply Forces / Gravity] ──> [Integrate Velocity & Position] ──> [AABB Manifold Generation] ──> [Impulse Response & Correction]
 
 2. Key Functions & MathGravity & Integration
 

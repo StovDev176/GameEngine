@@ -46,13 +46,13 @@ struct vector3 {
     x += other.x;
     y += other.y;
     z += other.z;
+  }
 }
 
 void operator-=(const vector3& other) {
     x -= other.x;
     y -= other.y;
     z -= other.z;
-}
 };
 
 std::ostream& operator<<(std::ostream& os, const vector3& v) {
