@@ -6,6 +6,7 @@
 #include "includes/Renderer.hpp"
 #include "includes/Components.hpp"
 #include "includes/ui/imgui_wrapper.hpp"
+#include "includes/CameraService.hpp"
 #include <iostream>
 #include <cmath>
 #include <memory>
@@ -131,7 +132,7 @@ int main() {
     Entity selectedEntity = mesh1;
     while (!WindowShouldClose()) {
       taskScheduler.update(GetFrameTime());
-
+      UpdateFreeflyCamera(camera, 20, GetFrameTime());
 
       renderer.beginFrame(camera);
       for (int i=0; i<meshPool->dense.size();i++) {
