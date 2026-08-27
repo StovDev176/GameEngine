@@ -130,9 +130,14 @@ int main() {
       }
     }, 2, false));
     Entity selectedEntity = mesh1;
+
+    ImGuiIO& io = ImGui::GetIO();
     while (!WindowShouldClose()) {
       taskScheduler.update(GetFrameTime());
-      UpdateFreeflyCamera(camera, 20, GetFrameTime());
+      if (!io.WantCaptureMouse) {
+        UpdateCameraTarget(0.003, camera);
+        UpdateFreeflyCamera(camera, 20, GetFrameTime());
+      }
 
       renderer.beginFrame(camera);
       for (int i=0; i<meshPool->dense.size();i++) {

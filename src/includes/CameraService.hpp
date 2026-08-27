@@ -3,7 +3,36 @@
 #include "Math.hpp"
 #include "Physics.hpp"
 #include <vector>
-#include "raymath.h" 
+#include "raymath.h"
+#include <algorithm> 
+#include <cmath>
+
+void UpdateCameraTarget(float sensibility, Camera3D& camera) {
+    if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
+        DisableCursor(); 
+    }
+    if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT)) {
+        EnableCursor();  
+    }
+
+    if (!IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) { return; }
+    static float yaw = -1.57f;
+    static float pitch = 0.0f;
+    Vector2 delta = GetMouseDelta();
+    yaw += delta.x * sensibility;
+    pitch -= delta.y * sensibility;
+
+    pitch = std::clamp(pitch, -1.55f, 1.55f);
+
+    Vector3 direction(0.0f, 0.0f, 0.0f);
+    direction.x = cosf(pitch) * cosf(yaw);
+    direction.y = sinf(pitch);
+    direction.z = cosf(pitch) * sinf(yaw);
+
+    camera.target.x = camera.position.x + direction.x;
+    camera.target.y = camera.position.y + direction.y;
+    camera.target.z = camera.position.z + direction.z;
+}
 
 void UpdateFreeflyCamera(Camera3D& camera, float speed, float dt) {
     Vector3 moveDirection = { 0.0f, 0.0f, 0.0f };
