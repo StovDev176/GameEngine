@@ -5,12 +5,14 @@
 #include <typeindex>
 #include <cstdint>
 #include <vector>
+#include <utility>
 
 using Entity = uint32_t;
 
 class IComponentPool {
 public:
     virtual ~IComponentPool() = default;
+    virtual void removeData(Entity entityId) = 0;
 };
 
 template<typename T>
@@ -18,17 +20,21 @@ class ComponentPool : public IComponentPool {
 public:
     std::vector<T> dense;
     std::vector<uint32_t> denseIds;
-    std::unordered_map<uint32_t, uint32_t> sparseSet;
+    std::vector<uint32_t> sparseSet;
 
     void addData(T data, uint32_t entityId) {
+        if (entityId >= sparseSet.size()) {
+            sparseSet.resize(entityId+1, UINT32_MAX);
+        }
         dense.push_back(data);
         denseIds.push_back(entityId);
         sparseSet[entityId] = dense.size() - 1;
     }
 
-    void removeData(uint32_t entityId) {
-        if (sparseSet.count(entityId) == 0) return; 
-        
+    void removeData(uint32_t entityId) override {
+        if (entityId >= sparseSet.size() || sparseSet[entityId] == UINT32_MAX) {
+            return;
+        }
         uint32_t denseIdx = sparseSet[entityId]; 
         uint32_t lastEntityId = denseIds.back(); 
         
@@ -39,11 +45,13 @@ public:
         
         dense.pop_back();
         denseIds.pop_back();
-        sparseSet.erase(entityId);
+        sparseSet[entityId] = UINT32_MAX;
     }
 
     T* getComponent(uint32_t entityId) {
-        if (sparseSet.count(entityId) == 0) return nullptr;
+        if (entityId >= sparseSet.size() || sparseSet[entityId] == UINT32_MAX) {
+            return nullptr;
+        }
         uint32_t denseIdx = sparseSet[entityId];
         return &dense[denseIdx];
     }
@@ -60,12 +68,13 @@ public:
     }
 
     template<typename T, typename... Args>
-    void addComponent() {
+    void addComponent(Entity entity, Args&&... args) {
         std::type_index typeId(typeid(T));
         if (pools.find(typeId) == pools.end()) {
             pools[typeId] = std::make_unique<ComponentPool<T>>();
         }
         ComponentPool<T>* pool = static_cast<ComponentPool<T>*>(pools[typeId].get());
+    pool->addData(T(std::forward<Args>(args)...), entity);
     }
 
     template<typename T>
@@ -75,5 +84,11 @@ public:
             pools[typeId] = std::make_unique<ComponentPool<T>>();
         }
         return static_cast<ComponentPool<T>*>(pools[typeId].get());
+    }
+
+    void removeEntityFromAllPools(Entity entityId) {
+        for (auto& [id, pool] : pools) {
+            pool->removeData(entityId);
+        }
     }
 };
