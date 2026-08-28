@@ -3,50 +3,79 @@
 #include <unordered_map>
 #include <string>
 #include <format>
+#include <variant>
+#include <type_traits>
 #include "raylib.h"
 
 class AssetManager {
 private:    
-    std::unordered_map<std::string, Texture2D> textures;
+    std::unordered_map<std::string, std::variant<Texture2D, Model>> assets;
 
 public:
     ~AssetManager() {
         UnloadAll();
     }
 
-    bool LoadTexture(const std::string& filePath, const std::string& id) {
-        if (textures.find(id) != textures.end()) {
+    template<typename T>
+    bool LoadAsset(const std::filesystem::path& filePath, const std::filesystem::path& id) {
+        static_assert(std::is_same_v<T, Model> || std::is_same_v<T, Texture2D>, 
+                      "[AssetManager] : Wrong type, please submit Model or Texture2D dawg.");
+
+        if (assets.find(id) != assets.end()) {
             std::cout << std::format("[AssetManager] Error: ID '{}' already exists in the assets map.\n", id);
             return false;
         }
 
-        Texture2D tex = ::LoadTexture(filePath.c_str());
+        T asset;
 
-        if (tex.id == 0) {
-            std::cout << std::format("[AssetManager] Error: Failed to load texture from path '{}'\n", filePath);
-            return false;
+        if constexpr (std::is_same_v<T, Model>) {
+            asset = ::LoadModel(filePath.c_str());
+            if (asset.meshCount <= 0) {
+                std::cout << std::format("[AssetManager] Error: Failed to load Model from path '{}'\n", filePath);
+                return false;
+            }
+        } else if constexpr (std::is_same_v<T, Texture2D>) {
+            asset = ::LoadTexture(filePath.c_str());
+            if (asset.id == 0) {
+                std::cout << std::format("[AssetManager] Error: Failed to load Texture2D from path '{}'\n", filePath);
+                return false;
+            }
         }
 
-        textures[id] = tex;
+        assets[id] = asset;
         return true;
     }
 
-    Texture2D& GetTexture(const std::string& id) {
-        auto it = textures.find(id);
-        if (it == textures.end()) {
-            std::cout << std::format("[AssetManager] Warning: Texture ID '{}' not found!\n", id);
-            static Texture2D emptyTexture = { 0 };
-            return emptyTexture;
+    template<typename T>
+    T& GetAsset(const std::string& id) {
+        static_assert(std::is_same_v<T, Model> || std::is_same_v<T, Texture2D>, 
+                      "[AssetManager] : Wrong type requested.");
+
+        auto it = assets.find(id);
+        if (it == assets.end()) {
+            std::cout << std::format("[AssetManager] Warning: Asset ID '{}' not found!\n", id);
+            if constexpr (std::is_same_v<T, Texture2D>) {
+                static Texture2D emptyTexture = { 0 };
+                return emptyTexture;
+            } else if constexpr (std::is_same_v<T, Model>) {
+                static Model emptyModel = { 0 };
+                return emptyModel;
+            }
         }
-        return it->second;
-    }
+        return std::get<T>(it->second);
+    }    
 
     void UnloadAll() {
-        for (auto& [id, texture] : textures) {
-            ::UnloadTexture(texture);
+        for (auto& [id, asset] : assets) {
+            std::visit([](auto&& arg) {
+                using Type = std::decay_t<decltype(arg)>;
+                if constexpr (std::is_same_v<Type, Model>) {
+                    ::UnloadModel(arg);
+                } else if constexpr (std::is_same_v<Type, Texture2D>) {
+                    ::UnloadTexture(arg);
+                }
+            }, asset);
         }
-        
-        textures.clear();
-        std::cout << "[AssetManager] All textures successfully unloaded from VRAM.\n";
+        assets.clear();
     }
 };
