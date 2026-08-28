@@ -36,7 +36,7 @@ public:
         if (!isRunning) {
             return;
         }
-        const float FIXED_DT = 1/60.0f;         
+        constexpr float FIXED_DT = 1.f/60.f;         
         if (frameTime > 0.25f) frameTime = 0.25f;  
         accumulator += frameTime;
 
