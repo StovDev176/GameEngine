@@ -61,16 +61,6 @@ public:
     void endFrame() {
         EndDrawing();
     }
-
-    void drawSphere(const vector3& pos, float radius, Color color) {
-        DrawSphere({pos.x,pos.y, pos.z}, radius, color);
-    } 
-    void drawCube(const vector3& pos, float w, float h, float l, Color color) {
-        DrawCube({pos.x, pos.y, pos.z}, w, h, l, color);
-    }
-    void drawGrid(int slices, float spacing) {
-        DrawGrid(slices, spacing);
-    }
     void drawUI() {
         DrawFPS(10, 10);
     

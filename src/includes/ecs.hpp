@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <vector>
 #include <utility>
+#include <functional>
 
 using Entity = uint32_t;
 
@@ -13,6 +14,7 @@ class IComponentPool {
 public:
     virtual ~IComponentPool() = default;
     virtual void removeData(Entity entityId) = 0;
+    virtual size_t size() const = 0;
 };
 
 template<typename T>
@@ -29,6 +31,9 @@ public:
         dense.push_back(data);
         denseIds.push_back(entityId);
         sparseSet[entityId] = dense.size() - 1;
+    }
+    size_t size() override {
+        return dense.size();
     }
 
     void removeData(uint32_t entityId) override {
@@ -90,5 +95,42 @@ public:
         for (auto& [id, pool] : pools) {
             pool->removeData(entityId);
         }
+    }
+    
+    template<typename... Components, typename Func>
+    void view(Func&& func) {
+    std::array<IComponentPool*, sizeof...(Components)> pools = {
+        getComponentPool<Components>()...
+    };
+
+    for (auto* pool : pools) {
+        if (!pool) return;
+    }
+
+    size_t smallestIndex = 0;
+    size_t minSize = pools[0]->size();
+
+    for (size_t i = 1; i < pools.size(); ++i) {
+        if (pools[i]->size() < minSize) {
+            minSize = pools[i]->size();
+            smallestIndex = i;
+        }
+    }
+
+    auto typedPools = std::make_tuple(getComponentPool<Components>()...);
+
+    auto& smallestTypedPool = std::get<0>(typedPools); 
+
+    IComponentPool* smallestPoolPtr = pools[smallestIndex];
+
+    auto processEntities = [&](auto* targetPool) {
+        for (Entity entity : targetPool->denseIds) {
+            bool valid = (... && pools[i]->hasEntity(entity)); 
+
+            if (valid) {
+                func(entity, std::get<ComponentPool<Components>*>(typedPools)->getComponent(entity)...);
+            }
+        }
+    };
     }
 };

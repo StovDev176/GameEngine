@@ -140,23 +140,11 @@ int main() {
       }
 
       renderer.beginFrame(camera);
-      for (int i=0; i<meshPool->dense.size();i++) {
-        uint32_t id = meshPool->denseIds[i];
-        MeshComponent* meshPtr = &meshPool->dense[i];
-        TransformComponent* tfCPointer = tfcPool->getComponent(id);
-
-        if (tfCPointer != nullptr && meshPtr != nullptr) {
-          switch(meshPtr->meshType) {
-            case PrimitiveType::SPHERE:
-              renderer.drawSphere({tfCPointer->position.x, tfCPointer->position.y, tfCPointer->position.z}, tfCPointer->scale.x, meshPtr->color);
-              break;
-            case PrimitiveType::CUBE:
-              renderer.drawCube({tfCPointer->position.x, tfCPointer->position.y, tfCPointer->position.z}, tfCPointer->scale.x, tfCPointer->scale.y, tfCPointer->scale.z, meshPtr->color);
-              break;
-          }
+      registry.view<MeshComponent, TransformComponent>([](Entity id, MeshComponent& mesh, TransformComponent& tfC) {
+        if (mesh.modelPtr) {
+          DrawModelEx(*mesh.modelPtr, tfC.position, tfC.rotation, tfC.rotationAngle, tfC.scale, mesh.color);
         }
-
-      }
+      });
 
       renderer.end3D();
       renderer.drawUI();

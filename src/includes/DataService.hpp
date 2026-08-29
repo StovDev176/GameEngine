@@ -1,5 +1,6 @@
 #pragma once
 #include <fstream>
+#include <filesystem>
 #include "GridService.hpp"
 #include <variant>
 #include "ECS.hpp"
@@ -16,7 +17,7 @@ struct WorldFileHeader {
 
 };
 
-bool SaveWorld(const std::string& filepath, const Grid& grid, ComponentPool<CellComponent>* cellComponent) {
+bool SaveWorld(const std::filesystem::path& filepath, const Grid& grid, ComponentPool<CellComponent>* cellComponent) {
     if (!cellComponent) return false;
 
     std::ofstream saveFile(filepath, std::ios::binary);
@@ -38,12 +39,10 @@ bool SaveWorld(const std::string& filepath, const Grid& grid, ComponentPool<Cell
 
     size_t dataSizeBytes = elementCount * sizeof(cellComponent);
     saveFile.write(reinterpret_cast<const char*>(cellComponent->dense.data()), dataSizeBytes);
-
-    saveFile.close();
     return true;
 }
 
-bool LoadWorld(const std::string& filepath, Grid& outGrid, ComponentPool<CellComponent>* outCellComponent) {
+bool LoadWorld(const std::filesystem::path& filepath, Grid& outGrid, ComponentPool<CellComponent>* outCellComponent) {
     if (!outCellComponent) return false;
 
     std::ifstream saveFile(filepath, std::ios::binary);
@@ -70,7 +69,5 @@ bool LoadWorld(const std::string& filepath, Grid& outGrid, ComponentPool<CellCom
 
     size_t dataSizeBytes = elementCount * sizeof(CellComponent);
     saveFile.read(reinterpret_cast<char*>(outCellComponent->dense.data()), dataSizeBytes);
-
-    saveFile.close();
     return true; 
 }

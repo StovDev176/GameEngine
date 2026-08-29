@@ -7,8 +7,15 @@
 enum class PrimitiveType {SPHERE, CUBE};
 
 struct MeshComponent {
-    PrimitiveType meshType;
+    Model* modelPtr = nullptr;
     Color color;
 
-    MeshComponent(PrimitiveType meshType, Color color) : color(color), meshType(meshType) {}
+    MeshComponent(Color color, Model* modelPtr) : color(color), meshType(meshType) modelPtr(modelPtr) {}
 };
+
+struct PrimitiveObjectComponent {
+    PrimitiveType objectType;
+    Color color;
+
+    PrimitiveObjectComponent(Color color, PrimitiveType objectType) : color(color), objectType(objectType) {}
+}

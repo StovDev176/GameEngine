@@ -53,3 +53,7 @@ void UpdateFreeflyCamera(Camera3D& camera, float speed, float dt) {
         camera.target   = Vector3Add(camera.target, displacement); 
     }
 }
+
+void FollowPoint(Camera3D& camera, vector3 point, vector3 offset) {
+    
+}
