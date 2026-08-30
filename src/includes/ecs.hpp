@@ -7,6 +7,7 @@
 #include <vector>
 #include <utility>
 #include <functional>
+#include "Logger.hpp"
 
 using Entity = uint32_t;
 
@@ -15,6 +16,7 @@ public:
     virtual ~IComponentPool() = default;
     virtual void removeData(Entity entityId) = 0;
     virtual size_t size() = 0;
+    virtual const std::vector<uint32_t>& getDenseIds() = 0;
 };
 
 template<typename T>
@@ -23,6 +25,10 @@ public:
     std::vector<T> dense;
     std::vector<uint32_t> denseIds;
     std::vector<uint32_t> sparseSet;
+
+    const std::vector<uint32_t>& getDenseIds() override {
+        return denseIds;
+    }
 
     void addData(T data, uint32_t entityId) {
         if (entityId >= sparseSet.size()) {
@@ -101,13 +107,16 @@ public:
     }
     
     template<typename... Components, typename Func>
-    void view(Func&& func) {
+
+void view(Func&& func) {
     std::array<IComponentPool*, sizeof...(Components)> pools = {
         getComponentPool<Components>()...
     };
 
     for (auto* pool : pools) {
-        if (!pool) return;
+        if (!pool) {
+            return;
+        }
     }
 
     size_t smallestIndex = 0;
@@ -120,6 +129,7 @@ public:
         }
     }
 
+
     auto typedPools = std::make_tuple(getComponentPool<Components>()...);
 
     auto& smallestTypedPool = std::get<0>(typedPools); 
@@ -127,12 +137,13 @@ public:
     IComponentPool* smallestPoolPtr = pools[smallestIndex];
 
     auto processEntities = [&](auto* targetPool) {
-        for (Entity entity : targetPool->denseIds) {
+        for (Entity entity : targetPool->getDenseIds()) {
             bool valid = (... && std::get<ComponentPool<Components>*>(typedPools)->hasEntity(entity)); 
             if (valid) {
                 func(entity, (*std::get<ComponentPool<Components>*>(typedPools)->getComponent(entity))...);
             }
         }
     };
-    }
+    processEntities(smallestPoolPtr);
+}
 };

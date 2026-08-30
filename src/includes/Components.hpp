@@ -22,8 +22,12 @@ struct MeshComponent {
     Color color = WHITE;
 
     MeshComponent(PrimitiveType primitive, Color color = WHITE)
-        : type(MeshType::PRIMITIVE), primitive(primitive), color(color) {}
+        : type(MeshType::PRIMITIVE), primitive(primitive), color(color) {
+            std::cout << "Primitive object created" << std::endl;
+        }
 
     MeshComponent(std::string assetId, Color color = WHITE)
-        : type(MeshType::MODEL), assetId(std::move(assetId)), color(color) {}
+        : type(MeshType::MODEL), assetId(std::move(assetId)), color(color) {
+            std::cout << "Model created" << std::endl;
+        }
 };
