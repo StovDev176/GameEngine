@@ -14,7 +14,7 @@ class IComponentPool {
 public:
     virtual ~IComponentPool() = default;
     virtual void removeData(Entity entityId) = 0;
-    virtual size_t size() const = 0;
+    virtual size_t size() = 0;
 };
 
 template<typename T>
@@ -59,6 +59,9 @@ public:
         }
         uint32_t denseIdx = sparseSet[entityId];
         return &dense[denseIdx];
+    }
+    bool hasEntity(Entity entity) const {
+        return sparseSet[entity] != UINT32_MAX; 
     }
 };
 
@@ -125,10 +128,9 @@ public:
 
     auto processEntities = [&](auto* targetPool) {
         for (Entity entity : targetPool->denseIds) {
-            bool valid = (... && pools[i]->hasEntity(entity)); 
-
+            bool valid = (... && std::get<ComponentPool<Components>*>(typedPools)->hasEntity(entity)); 
             if (valid) {
-                func(entity, std::get<ComponentPool<Components>*>(typedPools)->getComponent(entity)...);
+                func(entity, (*std::get<ComponentPool<Components>*>(typedPools)->getComponent(entity))...);
             }
         }
     };

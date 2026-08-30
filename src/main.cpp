@@ -5,6 +5,7 @@
 #include "includes/TaskScheduler.hpp"
 #include "includes/Renderer.hpp"
 #include "includes/Components.hpp"
+#include "includes/AssetManager.hpp"
 #include "includes/ui/imgui_wrapper.hpp"
 #include "includes/CameraService.hpp"
 #include <iostream>
@@ -27,6 +28,7 @@ int main() {
     ComponentPool<MeshComponent>* meshPool = registry.getComponentPool<MeshComponent>();
     ComponentPool<AABB>* AABB_Pool = registry.getComponentPool<AABB>();
 
+    AssetManager assetManager;
     rigidBodyPool->addData(
       RigidBody{
         vector3(1.0f, 2.0f, 0.0f),
@@ -52,31 +54,20 @@ int main() {
       vector3(100.0f, 1.0f, 100.0f),
     }, baseplate);   
 
-
     meshPool->addData(MeshComponent(PrimitiveType::SPHERE, GREEN), mesh1);
     meshPool->addData(MeshComponent(PrimitiveType::CUBE, BLUE), baseplate);
     TaskScheduler taskScheduler;
-    Camera3D camera = {0};
-    camera.position = (Vector3){ 20.0f, 20.0f, 20.0f }; 
-    camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };     
-    camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          
-    camera.fovy = 45.0f; 
-    camera.projection = CAMERA_PERSPECTIVE;  
+    Camera3D camera = CreateCamera(); 
     Renderer renderer;
-    taskScheduler.insertEvent(Event([rigidBodyPool, tfcPool](float dt){
-      for (size_t i = 0; i < rigidBodyPool->dense.size(); i++) {
-        uint32_t id = rigidBodyPool->denseIds[i];
-        RigidBody* rb = rigidBodyPool->getComponent(id);
-        TransformComponent* tfc = tfcPool->getComponent(id);
 
-        if (rb != nullptr && tfc != nullptr) {
-            applyGravity(*rb);
-            updatePhysics(*rb, *tfc, dt); 
-        }
-      }  
+    taskScheduler.insertEvent(Event([&registry](float dt){
+      registry.view<RigidBody, TransformComponent>([dt](Entity id, RigidBody& rb, TransformComponent& tfc){
+        applyGravity(rb);
+        updatePhysics(rb, tfc, dt); 
+      });
     }, 1, false));
 
-    taskScheduler.insertEvent(Event([tfcPool, meshPool, &camera](float dt){
+    taskScheduler.insertEvent(Event([&](float dt){
       if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         Vector2 mousePos = GetMousePosition();
         Ray raylibRay = GetMouseRay(mousePos, camera);
@@ -85,74 +76,31 @@ int main() {
           vector3(raylibRay.position.x, raylibRay.position.y, raylibRay.position.z), 
           vector3(raylibRay.direction.x, raylibRay.direction.y, raylibRay.direction.z) 
         );
-        
-        for (size_t i = 0; i < meshPool->dense.size(); i++) {
-          uint32_t id = meshPool->denseIds[i];
-          MeshComponent* meshPtr = &meshPool->dense[i];
-          TransformComponent* tfCPtr = tfcPool->getComponent(id);
 
-          if (tfCPtr != nullptr && meshPtr != nullptr) {
-            Sphere tempSphere(tfCPtr->position, tfCPtr->scale.x);
+        registry.view<MeshComponent, TransformComponent>([&raycast](Entity id, MeshComponent& mesh, TransformComponent& tfC){
+          Sphere tempSphere(tfC.position, tfC.scale.x);
             auto hit = tempSphere.intersect(raycast);
 
             if (hit != std::nullopt) {
-              meshPtr->color = RED; 
-              break; 
+              mesh.color = RED; 
             }
-          }
-        }
-      }
+        });
+      }  
     }, 4, false)); 
 
 
-    taskScheduler.insertEvent(Event([&registry, tfcPool, rigidBodyPool](float dt){
-      for (size_t i = 0; i < tfcPool->dense.size(); i++) {
-        
-        Entity idA = tfcPool->denseIds[i];
-        TransformComponent* tfcA = &tfcPool->dense[i];
-        RigidBody* rb1 = rigidBodyPool->getComponent(idA);
-        if (rb1 == nullptr) {continue;}
-        AABB boxA = createAABB(*tfcA); 
-        for (size_t j = i + 1; j < tfcPool->dense.size(); j++) {
-            
-            Entity idB = tfcPool->denseIds[j];
-            TransformComponent* tfcB = &tfcPool->dense[j];
-            AABB boxB = createAABB(*tfcB);
-            RigidBody* rb2 = rigidBodyPool->getComponent(idB);
-            if (rb2 == nullptr) {continue;}
-            Manifold m = computeManifold(boxA, boxB);
-            if (m.colliding) {
-              float res = std::min(rb1->bounciness, rb2->bounciness);
-              collide(*rb1, *rb2, m.normal, res);
-              posCorrection(m, *rb1, *rb2, *tfcA, *tfcB);
-            }
-        }
-      }
+    taskScheduler.insertEvent(Event([&registry](float dt) {
+      Update(registry);
     }, 2, false));
     Entity selectedEntity = mesh1;
 
     ImGuiIO& io = ImGui::GetIO();
     while (!WindowShouldClose()) {
       taskScheduler.update(GetFrameTime());
-      if (!io.WantCaptureMouse) {
-        UpdateCameraTarget(0.003, camera);
-        UpdateFreeflyCamera(camera, 20, GetFrameTime());
-      }
-
-      renderer.beginFrame(camera);
-      registry.view<MeshComponent, TransformComponent>([](Entity id, MeshComponent& mesh, TransformComponent& tfC) {
-        if (mesh.modelPtr) {
-          DrawModelEx(*mesh.modelPtr, tfC.position, tfC.rotation, tfC.rotationAngle, tfC.scale, mesh.color);
-        }
-      });
-
-      renderer.end3D();
-      renderer.drawUI();
-      rlImGuiBegin();
-      drawECSInspector(registry, selectedEntity, tfcPool, meshPool, rigidBodyPool);
-      rlImGuiEnd();
-      renderer.endFrame();
+      UpdateCamera(camera, 20, GetFrameTime(), 0.003, io);
+      renderer.Draw(registry, selectedEntity, *tfcPool, *meshPool, *rigidBodyPool, assetManager, camera);
     }
+    
     rlImGuiShutdown();
     CloseWindow();
     return 0;

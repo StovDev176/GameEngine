@@ -18,7 +18,7 @@ public:
     }
 
     template<typename T>
-    bool LoadAsset(const std::filesystem::path& filePath, const std::filesystem::path& id) {
+    bool LoadAsset(const std::filesystem::path& filePath, const std::string& id) {
         static_assert(std::is_same_v<T, Model> || std::is_same_v<T, Texture2D>, 
                       "[AssetManager] : Wrong type, please submit Model or Texture2D dawg.");
 
@@ -30,13 +30,13 @@ public:
         T asset;
 
         if constexpr (std::is_same_v<T, Model>) {
-            asset = ::LoadModel(filePath.c_str());
+            asset = ::LoadModel(filePath.string().c_str());
             if (asset.meshCount <= 0) {
                 std::cout << std::format("[AssetManager] Error: Failed to load Model from path '{}'\n", filePath);
                 return false;
             }
         } else if constexpr (std::is_same_v<T, Texture2D>) {
-            asset = ::LoadTexture(filePath.c_str());
+            asset = ::LoadTexture(filePath.string().c_str());
             if (asset.id == 0) {
                 std::cout << std::format("[AssetManager] Error: Failed to load Texture2D from path '{}'\n", filePath);
                 return false;

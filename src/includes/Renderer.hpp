@@ -4,7 +4,8 @@
 #include "raylib.h"
 #include "Physics.hpp"
 #include "ECS.hpp"
-#include "imgui_wrapper.hpp"
+#include "ui/imgui_wrapper.hpp"
+#include "AssetManager.hpp"
 
 void ApplyModernTheme() {
     ImGuiStyle& style = ImGui::GetStyle();
@@ -55,15 +56,45 @@ public:
         ClearBackground(BLACK);
         BeginMode3D(cam);
     } 
-    void end3D() {
-        EndMode3D();
-    }
-    void endFrame() {
-        EndDrawing();
-    }
     void drawUI() {
         DrawFPS(10, 10);
     
         DrawText("Project Maria Engine", 10, 40, 20, RAYWHITE);
+    }
+
+    void Draw(Registry& registry, Entity selectedEntity, ComponentPool<TransformComponent>& tfcPool, ComponentPool<MeshComponent>& meshPool, ComponentPool<RigidBody>& rigidBodyPool, AssetManager& assetManager, Camera3D& camera) {
+      beginFrame(camera);
+      registry.view<MeshComponent, TransformComponent>([&assetManager](Entity id, MeshComponent& mesh, TransformComponent& tfc) {
+        if (mesh.type == MeshType::PRIMITIVE) {
+          switch (mesh.primitive) {
+            case PrimitiveType::CUBE: {
+                Vector3 pos = { tfc.position.x, tfc.position.y, tfc.position.z };
+                Vector3 scale = { tfc.scale.x, tfc.scale.y, tfc.scale.z };
+                DrawCubeV(pos, scale, mesh.color);
+                break;
+            }    
+            case PrimitiveType::SPHERE: {
+                Vector3 pos = { tfc.position.x, tfc.position.y, tfc.position.z };
+                Vector3 scale = { tfc.scale.x, tfc.scale.y, tfc.scale.z };
+                DrawSphere(pos, scale.x, mesh.color);
+                break;
+            }    
+          }
+        } else if (mesh.type == MeshType::MODEL) {
+          Model& model = assetManager.GetAsset<Model>(mesh.assetId);
+          Vector3 pos = { tfc.position.x, tfc.position.y, tfc.position.z };
+          Vector3 scale = { tfc.scale.x, tfc.scale.y, tfc.scale.z };
+          Vector3 rotation = {tfc.rotation.x, tfc.rotation.y, tfc.rotation.z};
+
+          DrawModelEx(model, pos, rotation, tfc.rotation.y, scale, mesh.color);
+        }
+      });
+
+      EndMode3D();
+      drawUI();
+      rlImGuiBegin();
+      drawECSInspector(registry, selectedEntity, &tfcPool, &meshPool, &rigidBodyPool);
+      rlImGuiEnd();
+      EndDrawing();
     }
 };

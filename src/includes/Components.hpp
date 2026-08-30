@@ -1,21 +1,29 @@
 #pragma once
 
 #include "raylib.h"
-#include <iostream>
-#include "Math.hpp"
+#include <string>
 
-enum class PrimitiveType {SPHERE, CUBE};
-
-struct MeshComponent {
-    Model* modelPtr = nullptr;
-    Color color;
-
-    MeshComponent(Color color, Model* modelPtr) : color(color), meshType(meshType) modelPtr(modelPtr) {}
+enum class MeshType {
+    PRIMITIVE,
+    MODEL
 };
 
-struct PrimitiveObjectComponent {
-    PrimitiveType objectType;
-    Color color;
+enum class PrimitiveType {
+    SPHERE,
+    CUBE,
+    CYLINDER,
+    PLANE
+};
 
-    PrimitiveObjectComponent(Color color, PrimitiveType objectType) : color(color), objectType(objectType) {}
-}
+struct MeshComponent {
+    MeshType type = MeshType::PRIMITIVE;
+    PrimitiveType primitive = PrimitiveType::CUBE;
+    std::string assetId = ""; 
+    Color color = WHITE;
+
+    MeshComponent(PrimitiveType primitive, Color color = WHITE)
+        : type(MeshType::PRIMITIVE), primitive(primitive), color(color) {}
+
+    MeshComponent(std::string assetId, Color color = WHITE)
+        : type(MeshType::MODEL), assetId(std::move(assetId)), color(color) {}
+};

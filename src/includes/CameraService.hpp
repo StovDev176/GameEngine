@@ -6,6 +6,7 @@
 #include "raymath.h"
 #include <algorithm> 
 #include <cmath>
+#include "ui/imgui_wrapper.hpp"
 
 void UpdateCameraTarget(float sensibility, Camera3D& camera) {
     if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
@@ -54,6 +55,19 @@ void UpdateFreeflyCamera(Camera3D& camera, float speed, float dt) {
     }
 }
 
-void FollowPoint(Camera3D& camera, vector3 point, vector3 offset) {
-    
+void UpdateCamera(Camera3D camera, float speed, float dt, float sensibility, ImGuiIO& io) {
+    if (!io.WantCaptureMouse) {
+        UpdateCameraTarget(0.003, camera);
+        UpdateFreeflyCamera(camera, 20, GetFrameTime());
+    }
+}
+
+Camera3D CreateCamera() {
+    Camera3D camera = {0};
+    camera.position = (Vector3){ 20.0f, 20.0f, 20.0f }; 
+    camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };     
+    camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          
+    camera.fovy = 45.0f; 
+    camera.projection = CAMERA_PERSPECTIVE; 
+    return camera;
 }

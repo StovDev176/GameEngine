@@ -6,6 +6,7 @@
 #include <iostream>
 #include <optional>
 #include <vector>
+#include <cmath>
 #include "raylib.h"
 
 struct Raycast {
@@ -200,4 +201,26 @@ AABB createAABB(const TransformComponent& tf) {
     box.min = tf.position - halfScale;
     box.max = tf.position + halfScale;
     return box;
+}
+
+void Update(Registry& registry) {
+    struct BodyData { Entity id; TransformComponent& tfc; RigidBody& rb; };
+    std::vector<BodyData> bodies;
+    registry.view<TransformComponent, RigidBody>([&](Entity id, TransformComponent& tfc, RigidBody& rb) {
+        bodies.push_back({id, tfc, rb});
+    });
+    for (size_t i = 0; i < bodies.size(); ++i) {
+        AABB boxA = createAABB(bodies[i].tfc);
+
+        for (size_t j = i + 1; j < bodies.size(); ++j) {
+            AABB boxB = createAABB(bodies[j].tfc);
+            Manifold m = computeManifold(boxA, boxB);
+
+            if (m.colliding) {
+                float res = std::min(bodies[i].rb.bounciness, bodies[j].rb.bounciness);
+                collide(bodies[i].rb, bodies[j].rb, m.normal, res);
+                posCorrection(m, bodies[i].rb, bodies[j].rb, bodies[i].tfc, bodies[j].tfc);
+            }
+        }
+    }
 }
